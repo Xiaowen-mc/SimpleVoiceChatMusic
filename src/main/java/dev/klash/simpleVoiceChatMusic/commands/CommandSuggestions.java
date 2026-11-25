@@ -26,7 +26,7 @@ public final class CommandSuggestions {
 
     private static final List<String> SUBCOMMANDS = List.of(
             "play", "search", "now-playing", "queue", "skip",
-            "pause", "resume", "stop", "volume", "bassboost", "lang", "menu", "login", "source", "loop", "collect", "like", "catalogue", "kill"
+            "pause", "resume", "stop", "volume", "bassboost", "lang", "menu", "login", "source", "loop", "collect", "catalogue", "register", "kill"
     );
 
     private static final List<String> VOLUME_VALUES = List.of("0", "10", "25", "50", "75", "100");
@@ -99,6 +99,8 @@ public final class CommandSuggestions {
             case "login" -> {
                 add(result, "netease", "tabcomplete.login-netease", partial);
                 add(result, "bilibili", "tabcomplete.login-bilibili", partial);
+                add(result, "kugou", "tabcomplete.login-kugou", partial);
+                add(result, "kugouconcept", "tabcomplete.login-kugouconcept", partial);
                 add(result, "status", "tabcomplete.login-status", partial);
                 add(result, "logout", "tabcomplete.login-logout", partial);
                 add(result, "cookie", "tabcomplete.login-cookie", partial);
@@ -121,6 +123,8 @@ public final class CommandSuggestions {
                 add(result, "netease", "tabcomplete.source-netease", partial);
                 add(result, "youtube", "tabcomplete.source-youtube", partial);
                 add(result, "soundcloud", "tabcomplete.source-soundcloud", partial);
+                add(result, "kugou", "tabcomplete.source-kugou", partial);
+                add(result, "kugouconcept", "tabcomplete.source-kugouconcept", partial);
                 add(result, "all", "tabcomplete.source-all", partial);
                 add(result, "reset", "tabcomplete.source-reset", partial);
             }

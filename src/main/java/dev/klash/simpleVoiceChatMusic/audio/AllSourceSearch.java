@@ -77,6 +77,9 @@ public final class AllSourceSearch {
                 futures.add(pool.submit(() -> netEase(keyword, limit)));
             }
 
+            futures.add(pool.submit(() -> kugou(keyword, settings.allSourcesPerSourceLimit(), false)));
+            futures.add(pool.submit(() -> kugou(keyword, settings.allSourcesPerSourceLimit(), true)));
+
             if (group != null && settings.allSourcesYoutube() && isAvailable("youtube")) {
                 futures.add(pool.submit(() -> {
                     if (!reachable("www.youtube.com", 443, 700)) {
@@ -160,6 +163,26 @@ public final class AllSourceSearch {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private static List<Hit> kugou(String keyword, int limit, boolean concept) {
+        List<Hit> hits = new ArrayList<>();
+        String id = concept ? "kugouconcept" : "kugou";
+        String langKey = concept ? "source.kugouconcept" : "source.kugou";
+
+        try {
+            List<KugouApi.Song> songs = KugouApi.search(keyword, limit, 1,
+                    concept ? KugouApi.Platform.CONCEPT : KugouApi.Platform.STANDARD);
+
+            for (KugouApi.Song song : songs) {
+                hits.add(new Hit(id, langKey, song.displayName(),
+                        song.durationMs(), song.vip(), "music play " + song.identifier()));
+            }
+        } catch (Exception e) {
+            SimpleVoiceChatMusic.LOGGER.fine("Kugou search failed in all-source mode: " + e.getMessage());
+        }
+
+        return hits;
     }
 
     private static List<Hit> bilibili(String keyword, int limit) {

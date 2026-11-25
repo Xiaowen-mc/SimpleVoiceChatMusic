@@ -2,7 +2,6 @@ package dev.klash.simpleVoiceChatMusic;
 
 import de.maxhenkel.voicechat.api.BukkitVoicechatService;
 import dev.klash.simpleVoiceChatMusic.audio.MusicManager;
-import dev.klash.simpleVoiceChatMusic.audio.SpotifyHandler;
 import dev.klash.simpleVoiceChatMusic.commands.BassboostCommand;
 import dev.klash.simpleVoiceChatMusic.commands.KillCommand;
 import dev.klash.simpleVoiceChatMusic.commands.LangCommand;
@@ -93,13 +92,9 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
         // 网易云登录凭证（服主扫码后保存，所有玩家共用）
         dev.klash.simpleVoiceChatMusic.audio.NetEaseLogin.load();
         dev.klash.simpleVoiceChatMusic.audio.BilibiliLogin.load();
+        dev.klash.simpleVoiceChatMusic.audio.KugouLogin.load();
         // 每个玩家自己的默认音源偏好
         dev.klash.simpleVoiceChatMusic.config.PlayerPreferences.load();
-
-        SpotifyHandler.configure(
-                getConfig().getString("spotify.client-id", ""),
-                getConfig().getString("spotify.client-secret", "")
-        );
 
         // 本地文件播放已移除：不再创建 plugins/SimpleVoiceChatMusic/music 目录。
         // 旧版本留下的空目录顺手清掉（非空则保留，避免误删文件）。
@@ -199,7 +194,6 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
         subCommands.put("resume", new ResumeCommand());
         subCommands.put("skip", new SkipCommand());
         subCommands.put("queue", new QueueCommand());
-        subCommands.put("playing", new NowPlayingCommand());
         subCommands.put("now-playing", new NowPlayingCommand());
         subCommands.put("volume", new VolumeCommand());
         subCommands.put("bassboost", new BassboostCommand());
@@ -210,10 +204,16 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
         subCommands.put("source", new SourceCommand());
         subCommands.put("loop", new LoopCommand());
         subCommands.put("collect", new CollectCommand());
-        subCommands.put("like", new CollectCommand());
+        subCommands.put("register", (player, args) -> {
+            if (!player.hasPermission("simplevoicechatmusic.admin")) {
+                Messages.send(player, "general.no-permission");
+                return 1;
+            }
+            registerVoicechatService();
+            Messages.send(player, "register.ok");
+            return 0;
+        });
         subCommands.put("catalogue", new CatalogueCommand());
-        subCommands.put("playlist", new CatalogueCommand());
-        subCommands.put("gui", new MenuCommand());
     }
 
     /**
@@ -255,7 +255,7 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
 
     /**
      * 通过 Bukkit 的 ServicesManager 注册 SVC 插件。
-     * 有些服务器的加载顺序会让 onEnable 时还拿不到服务，所以保留 /music_register_service 手动补注册。
+     * 有些服务器的加载顺序会让 onEnable 时还拿不到服务，所以保留 /music register 手动补注册。
      */
     private void registerVoicechatService() {
         BukkitVoicechatService service;
@@ -268,7 +268,7 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
 
         if (service == null) {
             LOGGER.warning("Simple Voice Chat service is not available yet. "
-                    + "Run /music_register_service later if music does not work.");
+                    + "Run /music register later if music does not work.");
             return;
         }
 
@@ -280,10 +280,6 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         try {
-            if (label.equalsIgnoreCase("music_register_service")) {
-                return handleServiceRegistration(sender);
-            }
-
             // /music 与 /svcmusic 都由 Bukkit 根据 plugin.yml 路由到这里
             if (args.length == 0) {
                 Messages.send(sender, "general.usage");
@@ -314,19 +310,4 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
         }
     }
 
-    private boolean handleServiceRegistration(CommandSender sender) {
-        if (!sender.hasPermission(PERMISSION_ADMIN)) {
-            Messages.send(sender, "general.no-permission");
-            return true;
-        }
-
-        if (vcRegistered) {
-            Messages.send(sender, "service.already");
-            return true;
-        }
-
-        registerVoicechatService();
-        Messages.send(sender, "service.attempted");
-        return true;
-    }
 }

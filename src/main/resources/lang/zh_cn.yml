@@ -12,22 +12,20 @@ general:
   player-only: "<red>这条命令只能由玩家执行。</red>"
   unknown-subcommand: "<red>未知的子命令。</red> <gray>输入 <white>/music</white> 查看命令列表。</gray>"
   cooldown: "<gray>慢一点，<white><seconds> 秒</white>后再试。</gray>"
-  usage: |-
-    <gray>可用命令：</gray>
-    <white>/music play \<歌名 | Spotify 链接></white> <dark_gray>-</dark_gray> <gray>搜索并播放第一个结果</gray>
-    <white>/music search \<歌名></white> <dark_gray>-</dark_gray> <gray>从搜索结果里挑一首</gray>
-    <white>/music now-playing</white> <dark_gray>-</dark_gray> <gray>查看当前播放</gray>
-    <white>/music queue</white> <dark_gray>-</dark_gray> <gray>查看播放队列</gray>
+  usage: |
+    <gray>常用命令：</gray>
+    <white>/music play \<链接 | 歌名></white> <dark_gray>-</dark_gray> <gray>播放链接，或按默认音源搜索后播放</gray>
+    <white>/music search \<关键词></white> <dark_gray>-</dark_gray> <gray>搜索并显示结果（可翻页）</gray>
+    <white>/music now-playing | queue</white> <dark_gray>-</dark_gray> <gray>当前播放 / 播放队列</gray>
     <white>/music skip | pause | resume | stop</white> <dark_gray>-</dark_gray> <gray>播放控制</gray>
-    <white>/music volume \<0-100> | bassboost \<0-200></white> <dark_gray>-</dark_gray> <gray>音量与低音</gray>
-    <white>/music lang [语言代码]</white> <dark_gray>-</dark_gray> <gray>切换提示语言</gray>
-    <white>/music menu</white> <dark_gray>-</dark_gray> <gray>打开图形菜单</gray>
-    <white>/music loop \<off | one | all></white> <dark_gray>-</dark_gray> <gray>播放模式（顺序 / 单曲循环 / 列表循环）</gray>
-    <white>/music collect \<标识> [标题] | /music like</white> <dark_gray>-</dark_gray> <gray>收藏歌曲</gray>
-    <white>/music catalogue \<list | create | play | add | remove | delete></white> <dark_gray>-</dark_gray> <gray>我的音乐 / 收藏目录</gray>
-    <white>/music source \<bilibili | netease | youtube | soundcloud></white> <dark_gray>-</dark_gray> <gray>切换自己的默认搜索音源</gray>
-    <white>/music login \<netease|bilibili></white> <dark_gray>-</dark_gray> <gray>扫码登录网易云 / B 站（管理员）</gray>
-    <white>/music kill</white> <dark_gray>-</dark_gray> <gray>强制重启本组的播放器</gray>
+    <white>/music volume \<0-100> | bassboost \<0-200></white> <dark_gray>-</dark_gray> <gray>音量 / 低音</gray>
+    <white>/music loop \<off | one | all></white> <dark_gray>-</dark_gray> <gray>循环模式</gray>
+    <white>/music source \<all | netease | kugou | kugouconcept | youtube | soundcloud | bilibili></white> <dark_gray>-</dark_gray> <gray>默认音源</gray>
+    <white>/music menu</white> <dark_gray>-</dark_gray> <gray>图形菜单</gray>
+    <white>/music collect [标识] [标题]</white> <dark_gray>-</dark_gray> <gray>收藏歌曲（不带参数收藏当前播放）</gray>
+    <white>/music catalogue \<list | create | play | add | remove | delete></white> <dark_gray>-</dark_gray> <gray>管理收藏歌单</gray>
+    <white>/music login \<netease | bilibili | kugou | kugouconcept></white> <dark_gray>-</dark_gray> <gray>管理员扫码登录</gray>
+    <white>/music lang [语言] | kill | register</white> <dark_gray>-</dark_gray> <gray>语言 / 重置播放器 / 重注册服务</gray>
   error: "<red>执行命令时出错，详细信息请查看服务器控制台。</red>"
 
 voicechat:
@@ -37,15 +35,13 @@ voicechat:
 
 play:
   all-selected: "<gray>全部音源：已选择 </gray><white><source></white><gray> 的结果播放。</gray>"
-  usage: '<gray>用法：<white>/music play \<歌名 | Spotify 链接></white></gray>'
+  usage: '<gray>用法：<white>/music play \<歌名></white></gray>'
   loading: "<gray>正在加载歌曲……</gray>"
   queued: "<gray><player> 点播了 <track></gray>"
   queue-full: "<red>队列已满（或玩家已离开），这首歌没有加入队列。</red>"
   no-matches: "<red>没有找到匹配的歌曲。</red>"
   failed: "<red>加载失败：<reason></red>"
   failed-internal: "<red>这首歌加载失败，详细信息请查看服务器控制台。</red>"
-  spotify-not-configured: "<yellow>Spotify 尚未配置（config.yml 里的 spotify.client-id / spotify.client-secret），已改为普通搜索。</yellow>"
-  spotify-failed: "<red>查询 Spotify 曲目失败：<reason></red>"
   error-timeout: "<red>音源服务器响应超时。</red><gray>稍后再试，或换一个链接。</gray>"
   error-disconnected: "<red>音源服务器中途断开了连接（可能是防盗链，或 CDN 的切片本身是坏的）。</red><gray>把文件下载后放进 music 目录再播放通常就能用。</gray>"
   error-unreachable: "<red>无法连接到音源服务器。</red><gray>请检查链接和服务器网络。</gray>"
@@ -157,6 +153,8 @@ tabcomplete:
   source-netease: "网易云搜索（需要先登录）"
   source-youtube: "YouTube 搜索"
   source-soundcloud: "SoundCloud 搜索"
+  source-kugou: "酷狗音乐搜索"
+  source-kugouconcept: "酷狗概念版搜索"
   collect: "收藏当前播放到「我的喜欢」"
   like: "同 /music collect（收藏当前播放）"
   catalogue: "管理你的收藏目录（歌单）"
@@ -194,6 +192,9 @@ tabcomplete:
   bassboost-value: "输入 0-200 的整数"
 
 # ── 图形菜单（1.21.7+ Dialog）─────────────────────────────────────
+register:
+  ok: "<green>已重新注册语音聊天服务。</green>"
+
 menu:
   collect:
     title: "收藏歌曲"
@@ -259,6 +260,10 @@ menu:
     login-netease-tip: "扫码登录网易云（管理员）"
     login-bilibili: "登录 B 站"
     login-bilibili-tip: "扫码登录 B 站（管理员）"
+    login-kugou: "登录酷狗"
+    login-kugou-tip: "扫码登录酷狗（管理员）"
+    login-kugouconcept: "登录酷狗概念版"
+    login-kugouconcept-tip: "扫码登录酷狗概念版（管理员）"
     logout: "退出登录"
     logout-tip: "删除所有已保存的账号凭证（管理员）"
     kill: "重置播放器"
@@ -268,11 +273,6 @@ menu:
     back: "返回"
     close: "关闭"
   results:
-    prev-page: "[上一页]"
-    next-page: "[下一页]"
-    prev-tip: "上一页搜索结果"
-    next-tip: "下一页搜索结果"
-    more: "<dark_gray>共 <total> 条，这里显示前 14 条；用 </dark_gray><white>/music search</white><dark_gray> 查看更多。</dark_gray>"
     title: "搜索结果 · <source>"
     song-title: "歌曲操作"
     song-hint: "<dark_gray>可以播放，或收藏到「我的喜欢」。</dark_gray>"
@@ -337,12 +337,14 @@ lyrics:
 # 每个玩家自己的默认搜索/播放音源
 source:
   bilibili: "B 站"
+  kugou: "酷狗音乐"
+  kugouconcept: "酷狗概念版"
   netease: "网易云"
   youtube: "YouTube"
   soundcloud: "SoundCloud"
   all: "全部音源"
   current: "<gray>你当前的默认音源：</gray><white><source></white>"
-  available: '<gray>可用：</gray><white>bilibili</white><gray> / </gray><white>netease</white><gray> / </gray><white>youtube</white><gray> / </gray><white>soundcloud</white> <dark_gray>（/music source \<id> 切换）</dark_gray>'
+  available: '<gray>可用：</gray><white>bilibili</white><gray> / </gray><white>netease</white><gray> / </gray><white>youtube</white><gray> / </gray><white>soundcloud</white><gray> / </gray><white>kugou</white><gray> / </gray><white>kugouconcept</white> <dark_gray>（/music source \<id> 切换）</dark_gray>'
   set: "<green>默认音源已切换为 </green><white><source></white><gray>，之后 /music play、/music search 都用它。</gray>"
   reset: "<green>已恢复服务器默认音源：</green><white><source></white>"
   unknown: "<red>未知音源：</red><white><input></white><gray>。可选 bilibili / netease / youtube / soundcloud。</gray>"
@@ -351,6 +353,8 @@ source:
 platform:
   netease: "网易云"
   bilibili: "B 站"
+  kugou: "酷狗"
+  kugouconcept: "酷狗概念版"
 
 login:
   usage: '<red>用法：</red><white>/music login \<netease|bilibili> [status|logout|cookie \<值>]</white>'
@@ -410,8 +414,20 @@ catalogue:
 
 collect:
   no-track: "<gray>当前没有播放中的歌曲。</gray>"
-  usage: '<red>用法：</red><white>/music collect \<标识> [标题]</white><gray> 或 </gray><white>/music like</white>'
+  usage: '<red>用法：</red><white>/music collect [标识] [标题]</white><gray>（不带参数收藏当前播放）</gray>'
   choose: "<gray>要把 </gray><white><title></white><gray> 收藏到哪个歌单？</gray>"
   choose-hint: "<dark_gray>点击上面的歌单即可收藏。</dark_gray>"
   target: "<gray><index>. </gray><white><name></white> <dark_gray>(<count> 首)</dark_gray>"
   target-hover: "<gray>收藏到这个歌单</gray>"
+
+youtube:
+  disabled: "<yellow>YouTube 未启用：请在 config.yml 设置 music.all-sources.youtube: true（需能访问 YouTube）。</yellow>"
+
+soundcloud:
+  disabled: "<yellow>SoundCloud 未启用：请在 config.yml 设置 music.all-sources.soundcloud: true（需能访问 SoundCloud）。</yellow>"
+
+kugou:
+  vip-badge: "<gold>[VIP]</gold>"
+  no-results: "<red>酷狗没有找到相关歌曲。</red>"
+  error: "<red>酷狗接口请求失败：<reason></red>"
+  no-url: "<red>这首歌暂时拿不到播放地址（可能需要会员或版权限制）。</red>"

@@ -10,13 +10,9 @@ description: >-
 commands:
   music:
     description: Play music in voice chat.
-    usage: /music <play|search|now-playing|queue|skip|pause|resume|stop|volume|bassboost|loop|source|menu|login|lang|kill> [args]
+    usage: /music <play|search|now-playing|queue|skip|pause|resume|stop|volume|bassboost|loop|source|menu|login|lang|collect|catalogue|register|kill> [args]
     permission: simplevoicechatmusic.music
     aliases: [ svcmusic ]
-  music_register_service:
-    description: Manually register the Simple Voice Chat plugin service.
-    usage: /music_register_service
-    permission: simplevoicechatmusic.admin
 permissions:
   simplevoicechatmusic.music:
     description: Allows the player to play music in their voice chat group.

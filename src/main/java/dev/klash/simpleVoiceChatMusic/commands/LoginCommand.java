@@ -3,6 +3,8 @@ package dev.klash.simpleVoiceChatMusic.commands;
 import dev.klash.simpleVoiceChatMusic.SimpleVoiceChatMusic;
 import dev.klash.simpleVoiceChatMusic.audio.BilibiliApi;
 import dev.klash.simpleVoiceChatMusic.audio.BilibiliLogin;
+import dev.klash.simpleVoiceChatMusic.audio.KugouApi;
+import dev.klash.simpleVoiceChatMusic.audio.KugouLogin;
 import dev.klash.simpleVoiceChatMusic.audio.NetEaseApi;
 import dev.klash.simpleVoiceChatMusic.audio.NetEaseLogin;
 import dev.klash.simpleVoiceChatMusic.i18n.Messages;
@@ -39,7 +41,9 @@ public class LoginCommand implements Command {
 
     private enum Platform {
         NETEASE("netease", "platform.netease"),
-        BILIBILI("bilibili", "platform.bilibili");
+        BILIBILI("bilibili", "platform.bilibili"),
+        KUGOU("kugou", "platform.kugou"),
+        KUGOU_CONCEPT("kugouconcept", "platform.kugouconcept");
 
         private final String id;
         private final String langKey;
@@ -56,6 +60,8 @@ public class LoginCommand implements Command {
             return switch (value) {
                 case "netease", "网易云", "网易云音乐", "wyy" -> NETEASE;
                 case "bilibili", "b站", "哔哩哔哩", "bili" -> BILIBILI;
+                case "kugou", "kg", "酷狗" -> KUGOU;
+                case "kugouconcept", "kugou-concept", "kgc", "酷狗概念版", "概念版" -> KUGOU_CONCEPT;
                 default -> null;
             };
         }
@@ -83,6 +89,8 @@ public class LoginCommand implements Command {
         if (args[0].equalsIgnoreCase("logout")) {
             NetEaseLogin.clear();
             BilibiliLogin.clear();
+            KugouLogin.clear(KugouApi.Platform.STANDARD);
+            KugouLogin.clear(KugouApi.Platform.CONCEPT);
             Messages.send(player, "login.logout-all");
             return 0;
         }
@@ -141,21 +149,36 @@ public class LoginCommand implements Command {
     }
 
     private void logout(Player player, Platform platform) {
-        if (platform == Platform.NETEASE) {
-            NetEaseLogin.clear();
-        } else {
-            BilibiliLogin.clear();
+        switch (platform) {
+            case NETEASE -> NetEaseLogin.clear();
+            case BILIBILI -> BilibiliLogin.clear();
+            case KUGOU -> KugouLogin.clear(KugouApi.Platform.STANDARD);
+            case KUGOU_CONCEPT -> KugouLogin.clear(KugouApi.Platform.CONCEPT);
         }
 
         Messages.send(player, "login.logout-done", Ph.raw("platform", platformName(player, platform)));
     }
 
     private static boolean isLoggedIn(Platform platform) {
-        return platform == Platform.NETEASE ? NetEaseLogin.isLoggedIn() : BilibiliLogin.isLoggedIn();
+        return switch (platform) {
+            case NETEASE -> NetEaseLogin.isLoggedIn();
+            case BILIBILI -> BilibiliLogin.isLoggedIn();
+            case KUGOU -> KugouLogin.isLoggedIn(KugouApi.Platform.STANDARD);
+            case KUGOU_CONCEPT -> KugouLogin.isLoggedIn(KugouApi.Platform.CONCEPT);
+        };
     }
 
     private static String displayName(Platform platform) {
-        return platform == Platform.NETEASE ? NetEaseLogin.displayName() : BilibiliLogin.displayName();
+        return switch (platform) {
+            case NETEASE -> NetEaseLogin.displayName();
+            case BILIBILI -> BilibiliLogin.displayName();
+            case KUGOU -> KugouLogin.displayName(KugouApi.Platform.STANDARD);
+            case KUGOU_CONCEPT -> KugouLogin.displayName(KugouApi.Platform.CONCEPT);
+        };
+    }
+
+    private static KugouApi.Platform kugouOf(Platform platform) {
+        return platform == Platform.KUGOU_CONCEPT ? KugouApi.Platform.CONCEPT : KugouApi.Platform.STANDARD;
     }
 
     // -------------------------------------------------------------- cookie login
@@ -165,7 +188,11 @@ public class LoginCommand implements Command {
                 ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)).trim()
                 : "";
 
-        String required = platform == Platform.NETEASE ? "MUSIC_U=" : "SESSDATA=";
+        String required = switch (platform) {
+            case NETEASE -> "MUSIC_U=";
+            case BILIBILI -> "SESSDATA=";
+            default -> "token=";
+        };
 
         if (cookieValue.isEmpty() || !cookieValue.contains(required)) {
             Messages.send(player, "login.cookie-usage",
@@ -182,6 +209,15 @@ public class LoginCommand implements Command {
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             String nickname;
+
+            if (platform == Platform.KUGOU || platform == Platform.KUGOU_CONCEPT) {
+                KugouApi.setCookie(kugouOf(platform), cookieValue);
+                KugouLogin.save(kugouOf(platform), cookieValue, "");
+                runOnMainThread(() -> Messages.send(player, "login.cookie-ok",
+                        Ph.raw("platform", platformName(player, platform)),
+                        Ph.raw("nickname", platformName(player, platform))));
+                return;
+            }
 
             if (platform == Platform.NETEASE) {
                 nickname = NetEaseApi.loginWithCookie(cookieValue);
@@ -249,13 +285,21 @@ public class LoginCommand implements Command {
             String content;
 
             try {
-                if (platform == Platform.NETEASE) {
-                    key = NetEaseApi.qrKey();
-                    content = NetEaseApi.qrContent(key);
-                } else {
-                    BilibiliApi.Qr qr = BilibiliApi.qrGenerate();
-                    key = qr.key();
-                    content = qr.url();
+                switch (platform) {
+                    case NETEASE -> {
+                        key = NetEaseApi.qrKey();
+                        content = NetEaseApi.qrContent(key);
+                    }
+                    case BILIBILI -> {
+                        BilibiliApi.Qr qr = BilibiliApi.qrGenerate();
+                        key = qr.key();
+                        content = qr.url();
+                    }
+                    default -> {
+                        KugouApi.Qr qr = KugouApi.qrKey(kugouOf(platform));
+                        key = qr.key();
+                        content = qr.url();
+                    }
                 }
             } catch (Exception e) {
                 SimpleVoiceChatMusic.LOGGER.warning(platform.id + " qrKey failed: " + e.getMessage());
@@ -316,9 +360,11 @@ public class LoginCommand implements Command {
                 Poll poll;
 
                 try {
-                    poll = platform == Platform.NETEASE
-                            ? pollNetEase(key)
-                            : pollBilibili(key);
+                    poll = switch (platform) {
+                        case NETEASE -> pollNetEase(key);
+                        case BILIBILI -> pollBilibili(key);
+                        default -> pollKugou(platform, key);
+                    };
                 } catch (Exception e) {
                     SimpleVoiceChatMusic.LOGGER.warning(platform.id + " qrPoll failed: " + e.getMessage());
                     continue;
@@ -388,6 +434,19 @@ public class LoginCommand implements Command {
                 poll.detail());
     }
 
+    private static Poll pollKugou(Platform platform, String key) throws Exception {
+        KugouApi.QrPoll poll = KugouApi.qrPoll(kugouOf(platform), key);
+
+        return new Poll(poll.status(),
+                poll.waiting(),
+                poll.scanned(),
+                poll.success(),
+                poll.expired(),
+                poll.success() ? "token=" + poll.token() + "; userid=" + poll.userid() : null,
+                poll.userid(),
+                poll.detail());
+    }
+
     private static Poll pollBilibili(String key) throws Exception {
         BilibiliApi.QrPoll poll = BilibiliApi.qrPoll(key);
 
@@ -404,7 +463,11 @@ public class LoginCommand implements Command {
     private void handleSuccess(Player player, Platform platform, Poll poll) {
         String name = platformName(player, platform);
         String cookie = poll.cookie();
-        String required = platform == Platform.NETEASE ? "MUSIC_U=" : "SESSDATA=";
+        String required = switch (platform) {
+            case NETEASE -> "MUSIC_U=";
+            case BILIBILI -> "SESSDATA=";
+            default -> "token=";
+        };
 
         if (cookie == null || !cookie.contains(required)) {
             SimpleVoiceChatMusic.LOGGER.warning(platform.id + " login succeeded without the required cookie"
@@ -416,6 +479,16 @@ public class LoginCommand implements Command {
         }
 
         String nickname;
+
+        if (platform == Platform.KUGOU || platform == Platform.KUGOU_CONCEPT) {
+            KugouApi.setCookie(kugouOf(platform), cookie);
+            KugouLogin.save(kugouOf(platform), cookie, poll.nickname());
+            final String display = poll.nickname() == null || poll.nickname().isBlank()
+                    ? name : poll.nickname();
+            runOnMainThread(() -> Messages.send(player, "login.ok",
+                    Ph.raw("platform", name), Ph.raw("nickname", display)));
+            return;
+        }
 
         if (platform == Platform.NETEASE) {
             NetEaseApi.setCookie(cookie);

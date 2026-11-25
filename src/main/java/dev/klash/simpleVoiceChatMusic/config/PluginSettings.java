@@ -71,6 +71,7 @@ public final class PluginSettings {
     private final String defaultSource;
     private final boolean allSourcesYoutube;
     private final boolean allSourcesSoundcloud;
+    private final int allSourcesPerSourceLimit;
 
     private final boolean lyricsEnabled;
     private final int lyricsUpdateIntervalTicks;
@@ -102,7 +103,7 @@ public final class PluginSettings {
                            int configVersion, boolean menuEnabled, int menuQueuePageSize, int menuPreviewCount, int menuSearchResults,
                            boolean netEaseEnabled, String netEaseQuality,
                            String defaultSource,
-                           boolean allSourcesYoutube, boolean allSourcesSoundcloud,
+                           boolean allSourcesYoutube, boolean allSourcesSoundcloud, int allSourcesPerSourceLimit,
                            boolean lyricsEnabled, int lyricsUpdateIntervalTicks, int lyricsOffsetMs, String lyricsColor,
                            boolean lyricsBold, String lyricsFont,
                            int playCooldownMs, BilibiliOptions bilibili) {
@@ -144,6 +145,7 @@ public final class PluginSettings {
         this.defaultSource = defaultSource;
         this.allSourcesYoutube = allSourcesYoutube;
         this.allSourcesSoundcloud = allSourcesSoundcloud;
+        this.allSourcesPerSourceLimit = allSourcesPerSourceLimit;
         this.lyricsEnabled = lyricsEnabled;
         this.lyricsUpdateIntervalTicks = lyricsUpdateIntervalTicks;
         this.lyricsOffsetMs = lyricsOffsetMs;
@@ -227,9 +229,10 @@ public final class PluginSettings {
         if (netEaseQuality == null || netEaseQuality.isBlank()) {
             netEaseQuality = "exhigh";
         }
-        String defaultSource = config.getString("music.default-source", "bilibili");
-        boolean allSourcesYoutube = config.getBoolean("music.all-sources.youtube", true);
-        boolean allSourcesSoundcloud = config.getBoolean("music.all-sources.soundcloud", true);
+        String defaultSource = config.getString("music.default-source", "all");
+        boolean allSourcesYoutube = config.getBoolean("music.all-sources.youtube", false);
+        boolean allSourcesSoundcloud = config.getBoolean("music.all-sources.soundcloud", false);
+        int allSourcesPerSourceLimit = clamp(config.getInt("music.all-sources.per-source-limit", 10), 1, 50);
         if (defaultSource == null || defaultSource.isBlank()) {
             defaultSource = "bilibili";
         }
@@ -266,7 +269,7 @@ public final class PluginSettings {
                 autoGroupEnabled, autoGroupName.trim(), autoGroupPassword, autoGroupPersistent,
                 configVersion, menuEnabled, menuQueuePageSize, menuPreviewCount, menuSearchResults,
                 netEaseEnabled, netEaseQuality, defaultSource.trim(),
-                allSourcesYoutube, allSourcesSoundcloud,
+                allSourcesYoutube, allSourcesSoundcloud, allSourcesPerSourceLimit,
                 lyricsEnabled, lyricsUpdateIntervalTicks, lyricsOffsetMs, lyricsColor.trim(),
                 lyricsBold, lyricsFont.trim(),
                 playCooldown, bilibili);
@@ -445,6 +448,11 @@ public final class PluginSettings {
         return allSourcesSoundcloud;
     }
 
+    /** 全部音源模式下每个音源取多少条 */
+    public int allSourcesPerSourceLimit() {
+        return allSourcesPerSourceLimit;
+    }
+
     /** 是否在 ActionBar 显示歌词 */
     public boolean lyricsEnabled() {
         return lyricsEnabled;
@@ -495,7 +503,7 @@ public final class PluginSettings {
             DEFAULT_USER_AGENT, "", 5000, 15000, true, 4000, 30, 2, 1500, "green", true,
             true, "音乐", "", true,
             1, true, 20, 3, 100,
-            true, "exhigh", "bilibili", true, true,
+            true, "exhigh", "all", false, false, 10,
             true, 10, 0, "blue", true, "",
             1000,
             new BilibiliOptions(true, DEFAULT_BILIBILI_SEARCH, DEFAULT_BILIBILI_VIEW, DEFAULT_BILIBILI_VIEW_AID,

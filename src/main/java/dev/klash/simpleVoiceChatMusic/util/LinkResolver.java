@@ -15,30 +15,25 @@ public final class LinkResolver {
     public enum Type {
         /** 搜索词，或 ytsearch: / scsearch: 这类前缀 */
         SEARCH,
-        /** lavaplayer 原生支持的平台（YouTube / SoundCloud / Vimeo / Twitch / Bandcamp） */
+        /** lavaplayer 原生支持的平台（YouTube / SoundCloud / Vimeo / Bandcamp） */
         SUPPORTED_URL,
-        /** Spotify 单曲链接，走元数据查询 */
-        SPOTIFY,
         /** B 站链接 / bilibili:// 标识，走 B 站 API */
         BILIBILI,
         /** 网易云音乐链接 / netease:// 标识，走网易云 API */
         NETEASE,
         /** 未知主机，按直链处理（会做一次探测） */
         DIRECT,
-        /** 明确不支持的平台（网易云 / QQ 音乐 …） */
+        /** 明确不支持的平台（网易云 等） */
         UNSUPPORTED
     }
 
     private static final Set<String> SUPPORTED_HOSTS = Set.of(
             "youtube.com", "youtu.be", "music.youtube.com",
             "soundcloud.com", "m.soundcloud.com",
-            "vimeo.com", "twitch.tv", "www.twitch.tv", "bandcamp.com"
+            "vimeo.com", "bandcamp.com"
     );
 
     private static final Map<String, String> UNSUPPORTED_HOSTS = Map.ofEntries(
-            Map.entry("y.qq.com", "QQ 音乐"),
-            Map.entry("c.y.qq.com", "QQ 音乐"),
-            Map.entry("i.y.qq.com", "QQ 音乐"),
             Map.entry("kuwo.cn", "酷我音乐"),
             Map.entry("migu.cn", "咪咕音乐")
     );
@@ -114,10 +109,6 @@ public final class LinkResolver {
             return Type.SEARCH;
         }
 
-        if (lower.startsWith("spotify:track:") || lower.contains("open.spotify.com/track/")) {
-            return Type.SPOTIFY;
-        }
-
         if (!startsWithHttp(value)) {
             return Type.SEARCH;
         }
@@ -125,10 +116,6 @@ public final class LinkResolver {
         String host = hostOf(value);
         if (host == null) {
             return Type.SEARCH;
-        }
-
-        if (matchesHost(host, "spotify.com")) {
-            return Type.SPOTIFY;
         }
 
         if (isBilibiliHost(host)) {

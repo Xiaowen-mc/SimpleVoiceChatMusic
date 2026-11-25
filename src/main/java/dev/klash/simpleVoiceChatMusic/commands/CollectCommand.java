@@ -20,7 +20,7 @@ import java.util.Map;
  *
  * <pre>
  * /music collect &lt;标识&gt; [标题]   列出所有歌单，点击收藏到此
- * /music like                    同上，用当前正在播放的歌曲
+ * /music collect                不带参数时收藏当前正在播放的歌曲
  * </pre>
  */
 public class CollectCommand implements Command {

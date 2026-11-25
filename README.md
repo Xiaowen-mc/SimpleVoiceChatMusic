@@ -12,7 +12,6 @@
 - 服务端：**Paper / Purpur / Leaves 1.21.x**（编译依赖 `paper-api 26.1.2`）
 - **Java 25**（插件以 `--release 25` 编译）
 - 服务端安装 [Simple Voice Chat](https://modrinth.com/plugin/simple-voice-chat)
-- 可选：Spotify Client ID/Secret（想贴 Spotify 歌曲链接时用）
 
 > 图形菜单需要 **Paper 1.21.7+** 的 Dialog API；更低的 1.21.x 只能用命令。
 
@@ -299,7 +298,7 @@ music:
 交给 lavaplayer 之前，输入会先被规范化和分类：
 
 - 去掉首尾引号/`<>`、还原 `&amp;`、对空格和中文做百分号编码，`/music play http://host/我的歌.mp3` 也能用；
-- 已知平台直接路由（YouTube、SoundCloud、Vimeo、Twitch、Bandcamp、Spotify、B 站、网易云）；
+- 已知平台直接路由（YouTube、SoundCloud、Vimeo、Bandcamp、B 站、网易云、酷狗）；
 - 不支持的平台给出明确提示（QQ 音乐、酷我、咪咕等）；
 - **直链会先做一次预检**（`music.http.preflight`）：只读取 **1 KiB**，不下载、不占磁盘，
   可发现 401/403、404、HTML 页面、5xx、以及"声明有文件但返回 0 字节"的 CDN；
@@ -441,10 +440,6 @@ lyrics:
   bold: true
   font: ""
 
-# 8) Spotify（可选）
-spotify:
-  client-id: ""
-  client-secret: ""
 ```
 
 所有配置只在启动时读取，修改后请重启服务器。
@@ -495,21 +490,6 @@ general:
 
 ---
 
-## Spotify
-
-直接贴歌曲链接：`/music play https://open.spotify.com/track/...`
-
-插件**不**串流 Spotify 音频：它通过 Spotify Web API 取歌名与歌手，再去 YouTube 搜索该歌曲。
-只支持单曲（`/track/`），不支持专辑与歌单。
-
-在 <https://developer.spotify.com/dashboard> 创建应用，把凭据填进 `config.yml`。
-不填也能用，Spotify 链接会给出提示并回退到普通搜索。
-
-> **不要提交真实凭据。** 旧版本仓库历史里曾提交过含真实凭据的 `.env` 文件；
-> 如果你 fork 过，请到 Spotify 后台轮换密钥。
-
----
-
 ## 常见问题
 
 - **提示 "VoiceChat API connection has not been established yet"**：Simple Voice Chat 还没启动完成，
@@ -537,7 +517,6 @@ mvn clean package
 
 - 原模组：[ItzDerock/simplevoicechat-music](https://github.com/ItzDerock/simplevoicechat-music)（Apache-2.0）
 - Paper 移植：GavinGoGaming、MrTron
-- Spotify 支持：MrTron
 - 二维码渲染：[ZXing](https://github.com/zxing/zxing)（Apache-2.0）
 
 本项目以 **GNU General Public License v3.0（GPL-3.0）** 授权，详见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。\n\n> 本项目的 Paper 移植基于 Gavin Fox / MrTron 的 GPL-3.0 项目；原始 Fabric 模组与第三方库仍保留其 Apache-2.0 / MIT 许可声明（见 NOTICE）。

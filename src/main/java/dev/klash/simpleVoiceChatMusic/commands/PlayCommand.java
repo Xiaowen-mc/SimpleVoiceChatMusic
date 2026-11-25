@@ -3,12 +3,12 @@ package dev.klash.simpleVoiceChatMusic.commands;
 import dev.klash.simpleVoiceChatMusic.SimpleVoiceChatMusic;
 import dev.klash.simpleVoiceChatMusic.audio.AllSourceSearch;
 import dev.klash.simpleVoiceChatMusic.audio.BilibiliApi;
+import dev.klash.simpleVoiceChatMusic.audio.KugouApi;
 import dev.klash.simpleVoiceChatMusic.audio.GroupManager;
 import dev.klash.simpleVoiceChatMusic.audio.HttpProbe;
 import dev.klash.simpleVoiceChatMusic.audio.MusicManager;
 import dev.klash.simpleVoiceChatMusic.audio.NetEaseApi;
 import dev.klash.simpleVoiceChatMusic.audio.PlayLoadHandler;
-import dev.klash.simpleVoiceChatMusic.audio.SpotifyHandler;
 import dev.klash.simpleVoiceChatMusic.config.PlayerPreferences;
 import dev.klash.simpleVoiceChatMusic.config.PluginSettings;
 import dev.klash.simpleVoiceChatMusic.i18n.Messages;
@@ -80,35 +80,24 @@ public class PlayCommand implements Command {
             return 1;
         }
 
-        // Spotify 单曲：查元数据后转成搜索
-        if (type == LinkResolver.Type.SPOTIFY) {
-            if (!SpotifyHandler.isConfigured()) {
-                Messages.send(context, "play.spotify-not-configured");
-                runPlayTask(context, ModUtils.parseTrackId(input));
-                return 0;
-            }
-
-            Bukkit.getScheduler().runTaskAsynchronously(SimpleVoiceChatMusic.get(), () -> {
-                try {
-                    String trackId = SpotifyHandler.extractTrackId(input);
-                    if (trackId == null) {
-                        runPlayTask(context, ModUtils.parseTrackId(input));
-                        return;
-                    }
-
-                    SpotifyHandler.TrackInfo trackInfo = SpotifyHandler.fetchTrackInfo(trackId);
-                    runPlayTask(context, "ytsearch:" + trackInfo.getCombinedQuery());
-                } catch (Exception e) {
-                    SimpleVoiceChatMusic.LOGGER.warning("Spotify lookup failed: " + e.getMessage());
-                    runOnMainThread(() -> Messages.send(context, "play.spotify-failed",
-                            Ph.raw("reason", String.valueOf(e.getMessage()))));
-                    runPlayTask(context, ModUtils.parseTrackId(input));
-                }
-            });
+        if (input.startsWith("kugou://") || input.startsWith("kugouconcept://")) {
+            playKugou(context, input);
             return 0;
         }
 
         // 普通关键词：按玩家自己设置的默认音源搜索/播放
+        if (input.startsWith("ytsearch:")
+                && !dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesYoutube()) {
+            Messages.send(context, "youtube.disabled");
+            return 1;
+        }
+
+        if (input.startsWith("scsearch:")
+                && !dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesSoundcloud()) {
+            Messages.send(context, "soundcloud.disabled");
+            return 1;
+        }
+
         boolean prefixed = input.startsWith("ytsearch:")
                 || input.startsWith("ytmsearch:")
                 || input.startsWith("scsearch:");
@@ -128,15 +117,31 @@ public class PlayCommand implements Command {
                     searchAllAndPlay(context, input);
                     return 0;
                 }
+                case KUGOU -> {
+                    searchKugouAndPlay(context, input, false);
+                    return 0;
+                }
+                case KUGOU_CONCEPT -> {
+                    searchKugouAndPlay(context, input, true);
+                    return 0;
+                }
                 case NETEASE -> {
                     searchNetEaseAndPlay(context, input);
                     return 0;
                 }
                 case YOUTUBE -> {
+                    if (!dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesYoutube()) {
+                        Messages.send(context, "youtube.disabled");
+                        return 1;
+                    }
                     runPlayTask(context, "ytsearch:" + input);
                     return 0;
                 }
                 case SOUNDCLOUD -> {
+                    if (!dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesSoundcloud()) {
+                        Messages.send(context, "soundcloud.disabled");
+                        return 1;
+                    }
                     runPlayTask(context, "scsearch:" + input);
                     return 0;
                 }
@@ -339,6 +344,70 @@ public class PlayCommand implements Command {
             runOnMainThread(() -> Messages.send(context, "netease.error",
                     Ph.raw("reason", String.valueOf(e.getMessage()))));
         }
+    }
+
+    /** 酷狗：解析 kugou:// 标识为音频直链后播放 */
+    private void playKugou(Player context, String identifier) {
+        SimpleVoiceChatMusic plugin = SimpleVoiceChatMusic.getOrNull();
+
+        if (plugin == null || !plugin.isEnabled()) {
+            return;
+        }
+
+        Messages.send(context, "play.loading");
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                String url = KugouApi.songUrl(identifier);
+
+                if (url == null || url.isBlank()) {
+                    runOnMainThread(() -> Messages.send(context, "kugou.no-url"));
+                    return;
+                }
+
+                KugouApi.Song meta = KugouApi.metaFor(identifier);
+
+                if (meta != null) {
+                    dev.klash.simpleVoiceChatMusic.audio.TrackMetadata.put(url,
+                            meta.title(), meta.artist());
+                }
+
+                runPlayTask(context, url);
+            } catch (Exception e) {
+                SimpleVoiceChatMusic.LOGGER.warning("Kugou resolve failed: " + e.getMessage());
+                runOnMainThread(() -> Messages.send(context, "kugou.error",
+                        Ph.raw("reason", String.valueOf(e.getMessage()))));
+            }
+        });
+    }
+
+    /** 酷狗：搜索关键词并播放第一条 */
+    private void searchKugouAndPlay(Player context, String keyword, boolean concept) {
+        SimpleVoiceChatMusic plugin = SimpleVoiceChatMusic.getOrNull();
+
+        if (plugin == null || !plugin.isEnabled()) {
+            return;
+        }
+
+        Messages.send(context, "search.loading");
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                List<KugouApi.Song> songs = KugouApi.search(keyword, 1, 1,
+                        concept ? KugouApi.Platform.CONCEPT : KugouApi.Platform.STANDARD);
+
+                if (songs.isEmpty()) {
+                    runOnMainThread(() -> Messages.send(context, "kugou.no-results"));
+                    return;
+                }
+
+                playKugou(context, songs.get(0).identifier());
+            } catch (Exception e) {
+                SimpleVoiceChatMusic.LOGGER.warning("Kugou search failed: " + e.getMessage());
+                runOnMainThread(() -> Messages.send(context, "kugou.error",
+                        Ph.raw("reason", String.valueOf(e.getMessage()))));
+            }
+        });
     }
 
     /**

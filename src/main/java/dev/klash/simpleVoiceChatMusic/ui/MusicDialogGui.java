@@ -9,6 +9,7 @@ import dev.klash.simpleVoiceChatMusic.audio.BilibiliApi;
 import dev.klash.simpleVoiceChatMusic.audio.GroupManager;
 import dev.klash.simpleVoiceChatMusic.audio.GroupSettingsManager;
 import dev.klash.simpleVoiceChatMusic.audio.MusicManager;
+import dev.klash.simpleVoiceChatMusic.audio.KugouApi;
 import dev.klash.simpleVoiceChatMusic.audio.NetEaseApi;
 import dev.klash.simpleVoiceChatMusic.audio.PlayerCatalogue;
 import dev.klash.simpleVoiceChatMusic.config.PlayerPreferences;
@@ -145,9 +146,17 @@ public final class MusicDialogGui {
                                 song.durationMs(), song.vip()),
                                 "music play " + song.identifier(), song.identifier(), song.displayName()));
                     }
+                } else if (source == PlayerPreferences.Source.KUGOU
+                        || source == PlayerPreferences.Source.KUGOU_CONCEPT) {
+                    for (KugouApi.Song song : KugouApi.search(query, limit, 1)) {
+                        entries.add(new ResultEntry(resultLabel(player, song.displayName(),
+                                song.durationMs(), song.vip()),
+                                "music play " + song.identifier(), song.identifier(),
+                                song.displayName()));
+                    }
                 } else if (source == PlayerPreferences.Source.ALL) {
                     GroupManager group = resolveGroup(player);
-                    int perSource = Math.max(1, Math.min(limit, 10));
+                    int perSource = Math.max(1, settings.allSourcesPerSourceLimit());
 
                     for (AllSourceSearch.Hit hit : AllSourceSearch.search(group, query, perSource, 6000)) {
                         if (entries.size() >= limit) {
@@ -604,12 +613,24 @@ public final class MusicDialogGui {
                         runCommand(player, "music login bilibili");
                     })));
 
+            actions.add(button(player, "menu.button.login-kugou", "menu.button.login-kugou-tip",
+                    click(view -> {
+                        player.closeDialog();
+                        runCommand(player, "music login kugou");
+                    })));
+
+            actions.add(button(player, "menu.button.login-kugouconcept", "menu.button.login-kugouconcept-tip",
+                    click(view -> {
+                        player.closeDialog();
+                        runCommand(player, "music login kugouconcept");
+                    })));
+
             actions.add(button(player, "menu.button.logout", "menu.button.logout-tip",
                     click(view -> runCommand(player, "music login logout"))));
 
             actions.add(button(player, "menu.button.register-service", "menu.button.register-service-tip",
                     click(view -> {
-                        runCommand(player, "music_register_service");
+                        runCommand(player, "music register");
                         player.showDialog(buildAdvanced(player));
                     })));
         }

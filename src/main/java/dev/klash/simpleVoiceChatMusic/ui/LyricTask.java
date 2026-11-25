@@ -3,6 +3,7 @@ package dev.klash.simpleVoiceChatMusic.ui;
 import dev.klash.simpleVoiceChatMusic.SimpleVoiceChatMusic;
 import dev.klash.simpleVoiceChatMusic.audio.GroupManager;
 import dev.klash.simpleVoiceChatMusic.audio.MusicManager;
+import dev.klash.simpleVoiceChatMusic.audio.KugouApi;
 import dev.klash.simpleVoiceChatMusic.audio.NetEaseApi;
 import dev.klash.simpleVoiceChatMusic.config.PluginSettings;
 import dev.klash.simpleVoiceChatMusic.i18n.Messages;
@@ -80,7 +81,14 @@ public final class LyricTask implements Runnable {
         NetEaseApi.Song song = NetEaseApi.metaFor(track.getIdentifier());
         List<NetEaseApi.LyricLine> lines;
 
-        if (song != null) {
+        if (track.getIdentifier().startsWith("kugou://")) {
+            lines = KugouApi.lyricsFor(track.getIdentifier());
+
+            if (lines == null) {
+                clearIfNeeded(group, listeners);
+                return;
+            }
+        } else if (song != null) {
             lines = NetEaseApi.lyricsFor(song.id());
 
             if (lines == null) {

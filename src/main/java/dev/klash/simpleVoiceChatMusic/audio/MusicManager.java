@@ -30,16 +30,28 @@ public class MusicManager {
         // allow hotswapping EQ levels
         this.playerManager.getConfiguration().setFilterHotSwapEnabled(true);
 
-        AudioSourceManagers.registerRemoteSources(
-                this.playerManager,
-                // we will load v2 of yt music player
+        dev.klash.simpleVoiceChatMusic.config.PluginSettings settings =
+                dev.klash.simpleVoiceChatMusic.config.PluginSettings.get();
+
+        java.util.List<Class<? extends com.sedmelluq.discord.lavaplayer.source.AudioSourceManager>> excluded =
+                new java.util.ArrayList<>(java.util.List.of(
+                // 使用 v2 的 YouTube 源
                 com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager.class,
                 // HTTP 源要自己建，才能配置 UA / Referer / 超时
-                com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager.class
-        );
+                com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager.class,
+                // Twitch 初始化时会联网，国内网络超时，不注册
+                com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager.class));
 
-        YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager();
-        this.playerManager.registerSourceManager(ytSourceManager);
+        if (!settings.allSourcesSoundcloud()) {
+            excluded.add(com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager.class);
+        }
+
+        AudioSourceManagers.registerRemoteSources(this.playerManager, excluded.toArray(new Class[0]));
+
+        if (settings.allSourcesYoutube()) {
+            YoutubeAudioSourceManager ytSourceManager = new YoutubeAudioSourceManager();
+            this.playerManager.registerSourceManager(ytSourceManager);
+        }
 
         // 兜底的直链音源放最后，避免把 YouTube 之类的链接当成普通文件
         this.playerManager.registerSourceManager(createHttpSourceManager());

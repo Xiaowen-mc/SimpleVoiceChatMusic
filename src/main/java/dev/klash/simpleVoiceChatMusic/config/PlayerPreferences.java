@@ -30,11 +30,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PlayerPreferences {
 
     public enum Source {
-        BILIBILI("bilibili", "source.bilibili"),
+        ALL("all", "source.all"),
         NETEASE("netease", "source.netease"),
+        KUGOU("kugou", "source.kugou"),
+        KUGOU_CONCEPT("kugouconcept", "source.kugouconcept"),
         YOUTUBE("youtube", "source.youtube"),
         SOUNDCLOUD("soundcloud", "source.soundcloud"),
-        ALL("all", "source.all");
+        BILIBILI("bilibili", "source.bilibili");
 
         private final String id;
         private final String langKey;
@@ -52,21 +54,18 @@ public final class PlayerPreferences {
             return langKey;
         }
 
-        /** 解析玩家输入，识别不了返回 null */
         @Nullable
-        public static Source fromInput(@Nullable String raw) {
-            if (raw == null) {
-                return null;
-            }
+        public static Source fromInput(String raw) {
+            String v = raw == null ? "" : raw.trim().toLowerCase(java.util.Locale.ROOT);
 
-            String value = raw.trim().toLowerCase(Locale.ROOT);
-
-            return switch (value) {
-                case "bilibili", "b站", "哔哩哔哩", "bili" -> BILIBILI;
-                case "netease", "网易云", "网易云音乐", "wyy" -> NETEASE;
-                case "youtube", "yt", "油管" -> YOUTUBE;
-                case "soundcloud", "sc" -> SOUNDCLOUD;
+            return switch (v) {
                 case "all", "any", "全部", "全部音源" -> ALL;
+                case "bilibili", "b站", "哔哩哔哩", "bili" -> BILIBILI;
+                case "netease", "网易云", "网易" -> NETEASE;
+                case "youtube", "yt" -> YOUTUBE;
+                case "soundcloud", "sc" -> SOUNDCLOUD;
+                case "kugou", "kg", "酷狗" -> KUGOU;
+                case "kugouconcept", "kugou-concept", "kgc", "酷狗概念版", "概念版" -> KUGOU_CONCEPT;
                 default -> null;
             };
         }

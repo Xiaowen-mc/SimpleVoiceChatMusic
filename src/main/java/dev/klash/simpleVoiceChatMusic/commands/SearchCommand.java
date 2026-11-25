@@ -3,6 +3,7 @@ package dev.klash.simpleVoiceChatMusic.commands;
 import dev.klash.simpleVoiceChatMusic.SimpleVoiceChatMusic;
 import dev.klash.simpleVoiceChatMusic.audio.AllSourceSearch;
 import dev.klash.simpleVoiceChatMusic.audio.BilibiliApi;
+import dev.klash.simpleVoiceChatMusic.audio.KugouApi;
 import dev.klash.simpleVoiceChatMusic.audio.GroupManager;
 import dev.klash.simpleVoiceChatMusic.audio.MusicManager;
 import dev.klash.simpleVoiceChatMusic.audio.NetEaseApi;
@@ -64,6 +65,18 @@ public class SearchCommand implements Command {
             return 1;
         }
 
+        if (raw.startsWith("ytsearch:")
+                && !dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesYoutube()) {
+            Messages.send(context, "youtube.disabled");
+            return 1;
+        }
+
+        if (raw.startsWith("scsearch:")
+                && !dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesSoundcloud()) {
+            Messages.send(context, "soundcloud.disabled");
+            return 1;
+        }
+
         boolean prefixed = raw.startsWith("ytsearch:")
                 || raw.startsWith("ytmsearch:")
                 || raw.startsWith("scsearch:");
@@ -82,6 +95,14 @@ public class SearchCommand implements Command {
             return searchNetEase(context, keyword, page);
         }
 
+        if (lower.startsWith("kugou:") || lower.startsWith("kg:")) {
+            return searchKugou(context, raw.substring(raw.indexOf(':') + 1).trim(), page, false);
+        }
+
+        if (lower.startsWith("kgc:")) {
+            return searchKugou(context, raw.substring(raw.indexOf(':') + 1).trim(), page, true);
+        }
+
         // 普通关键词：按玩家自己设置的默认音源搜索
         String query = raw;
 
@@ -93,13 +114,31 @@ public class SearchCommand implements Command {
                 case NETEASE -> {
                     return searchNetEase(context, raw, page);
                 }
+                case KUGOU -> {
+                    return searchKugou(context, raw, page, false);
+                }
+                case KUGOU_CONCEPT -> {
+                    return searchKugou(context, raw, page, true);
+                }
                 case BILIBILI -> {
                     if (PluginSettings.get().bilibili().enabled()) {
                         return searchBilibili(context, raw, page);
                     }
                 }
-                case YOUTUBE -> query = "ytsearch:" + raw;
-                case SOUNDCLOUD -> query = "scsearch:" + raw;
+                case YOUTUBE -> {
+                    if (!dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesYoutube()) {
+                        Messages.send(context, "youtube.disabled");
+                        return 1;
+                    }
+                    query = "ytsearch:" + raw;
+                }
+                case SOUNDCLOUD -> {
+                    if (!dev.klash.simpleVoiceChatMusic.config.PluginSettings.get().allSourcesSoundcloud()) {
+                        Messages.send(context, "soundcloud.disabled");
+                        return 1;
+                    }
+                    query = "scsearch:" + raw;
+                }
             }
         }
 
@@ -118,6 +157,83 @@ public class SearchCommand implements Command {
                 ));
 
         return 0;
+    }
+
+    private int searchKugou(Player context, String keyword, int page, boolean concept) {
+        if (keyword.isEmpty()) {
+            Messages.send(context, "search.usage");
+            return 1;
+        }
+
+        Messages.send(context, "search.loading");
+
+        Bukkit.getScheduler().runTaskAsynchronously(SimpleVoiceChatMusic.get(), () -> {
+            try {
+                List<KugouApi.Song> songs = KugouApi.search(keyword, PluginSettings.get().maxSearchResults(), page,
+                        concept ? KugouApi.Platform.CONCEPT : KugouApi.Platform.STANDARD);
+
+                Bukkit.getScheduler().runTask(SimpleVoiceChatMusic.get(), () -> {
+                    if (!context.isOnline()) {
+                        return;
+                    }
+
+                    if (songs.isEmpty()) {
+                        Messages.send(context, "kugou.no-results");
+                        return;
+                    }
+
+                    context.sendMessage(renderKugouResults(context, songs));
+
+                    if (songs.size() >= PluginSettings.get().maxSearchResults()) {
+                        context.sendMessage(nextPage(context, keyword, page));
+                    }
+                });
+            } catch (Exception e) {
+                SimpleVoiceChatMusic.LOGGER.warning("Kugou search failed: " + e.getMessage());
+
+                Bukkit.getScheduler().runTask(SimpleVoiceChatMusic.get(), () -> {
+                    if (context.isOnline()) {
+                        Messages.send(context, "kugou.error", Ph.raw("reason", String.valueOf(e.getMessage())));
+                    }
+                });
+            }
+        });
+
+        return 0;
+    }
+
+    private Component renderKugouResults(Player viewer, List<KugouApi.Song> songs) {
+        Component text = Messages.render(viewer, "search.header", Ph.num("count", songs.size()));
+        Component bullet = Messages.component(viewer, "search.bullet");
+        Component label = styledLabel(Messages.component(viewer, "search.click-to-queue"));
+        Component hover = Messages.component(viewer, "search.click-hover");
+
+        for (KugouApi.Song song : songs) {
+            Component clickable = label
+                    .clickEvent(ClickEvent.runCommand("/music play " + song.identifier()))
+                    .hoverEvent(HoverEvent.showText(hover));
+
+            Component line = Text.literal(song.displayName()).color(NamedTextColor.WHITE);
+
+            if (song.durationMs() > 0) {
+                line = line.append(Text.literal(" [" + ModUtils.formatMMSS(song.durationMs()) + "]")
+                        .color(NamedTextColor.DARK_GRAY));
+            }
+
+            if (song.vip()) {
+                line = line.append(Text.literal(" ")).append(Messages.component(viewer, "kugou.vip-badge"));
+            }
+
+            text = text.append(Text.literal("\n"))
+                    .append(bullet)
+                    .append(line)
+                    .append(Text.literal(" "))
+                    .append(clickable)
+                    .append(Text.literal(" "))
+                    .append(collectLabel(viewer, song.identifier(), song.displayName()));
+        }
+
+        return text;
     }
 
     /**
@@ -318,6 +434,10 @@ public class SearchCommand implements Command {
             if (song.durationMs() > 0) {
                 line = line.append(Text.literal(" [" + ModUtils.formatMMSS(song.durationMs()) + "]")
                         .color(NamedTextColor.DARK_GRAY));
+            }
+
+            if (song.vip()) {
+                line = line.append(Text.literal(" ")).append(Messages.component(viewer, "kugou.vip-badge"));
             }
 
             if (song.vip()) {

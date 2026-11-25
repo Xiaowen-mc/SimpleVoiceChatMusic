@@ -12,7 +12,6 @@
 #    4. B 站              bilibili
 #    5. Boss 栏           bossbar
 #    6. 图形菜单          menu
-#    7. Spotify（可选）   spotify
 # =====================================================================================
 config-version: 1
 
@@ -57,11 +56,14 @@ music:
   # 「全部音源」模式里额外参与搜索的源（B 站 / 网易云由 bilibili.enabled、netease.enabled 控制）。
   # 国内网络连不上 YouTube / SoundCloud 时把它们设为 false，避免每次搜索都超时。
   all-sources:
-    youtube: true
-    soundcloud: true
+    # 国内网络建议保持 false；开启前确认服务器能访问 YouTube / SoundCloud
+    youtube: false
+    soundcloud: false
+    # 全部音源模式下每个音源返回多少条结果
+    per-source-limit: 10
   # all = 一次并发搜索所有音源（BV 号 / 链接仍然直接播放，不会被搜索）
   # 玩家可以用 /music source <id> 或游戏内菜单单独修改自己的默认音源。
-  default-source: "bilibili"
+  default-source: "all"
 
   # 同一个人连续执行 /music play、/music search 的冷却（毫秒），0 = 关闭。
   command-cooldown-ms: 1000
@@ -205,11 +207,4 @@ lyrics:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  9. Spotify（可选）
-# ─────────────────────────────────────────────────────────────────────────────
-# 只有想在 /music play 里直接粘贴 Spotify 单曲链接时才需要填。
-# 申请：https://developer.spotify.com/dashboard 创建 App → 复制 Client ID / Secret。
-# 不要把这两个值提交到公开仓库。
-spotify:
-  client-id: ""
-  client-secret: ""
+

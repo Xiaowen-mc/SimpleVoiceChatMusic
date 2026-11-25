@@ -16,19 +16,20 @@ general:
   player-only: "<red>Only players can use this command.</red>"
   unknown-subcommand: "<red>Unknown subcommand.</red> <gray>Use <white>/music</white> to see the command list.</gray>"
   cooldown: "<gray>Slow down a bit, try again in <white><seconds>s</white>.</gray>"
-  usage: |-
-    <gray>Available commands:</gray>
-    <white>/music play \<song title | Spotify link></white> <dark_gray>-</dark_gray> <gray>search and queue the first result</gray>
-    <white>/music search \<song></white> <dark_gray>-</dark_gray> <gray>pick from the first few results</gray>
-    <white>/music now-playing</white> <dark_gray>-</dark_gray> <gray>show the current song</gray>
-    <white>/music queue</white> <dark_gray>-</dark_gray> <gray>show the queue</gray>
-    <white>/music skip | pause | resume | stop</white> <dark_gray>-</dark_gray> <gray>playback control</gray>
-    <white>/music volume \<0-100> | bassboost \<0-200></white> <dark_gray>-</dark_gray> <gray>audio settings</gray>
-    <white>/music lang [code]</white> <dark_gray>-</dark_gray> <gray>change the message language</gray>
-    <white>/music menu</white> <dark_gray>-</dark_gray> <gray>open the dialog menu</gray>
-    <white>/music source \<bilibili | netease | youtube | soundcloud></white> <dark_gray>-</dark_gray> <gray>switch your default search source</gray>
-    <white>/music login \<netease|bilibili></white> <dark_gray>-</dark_gray> <gray>scan a QR code to log in (admin)</gray>
-    <white>/music kill</white> <dark_gray>-</dark_gray> <gray>force-restart the player of your group</gray>
+  usage: |
+    <gray>Common commands:</gray>
+    <white>/music play \<url | query></white> <dark_gray>-</dark_gray> <gray>Play a link, or search with your default source</gray>
+    <white>/music search \<query></white> <dark_gray>-</dark_gray> <gray>Search and show results (paginated)</gray>
+    <white>/music now-playing | queue</white> <dark_gray>-</dark_gray> <gray>Current track / queue</gray>
+    <white>/music skip | pause | resume | stop</white> <dark_gray>-</dark_gray> <gray>Playback controls</gray>
+    <white>/music volume \<0-100> | bassboost \<0-200></white> <dark_gray>-</dark_gray> <gray>Volume / bass</gray>
+    <white>/music loop \<off | one | all></white> <dark_gray>-</dark_gray> <gray>Loop mode</gray>
+    <white>/music source \<all | netease | kugou | kugouconcept | youtube | soundcloud | bilibili></white> <dark_gray>-</dark_gray> <gray>Default source</gray>
+    <white>/music menu</white> <dark_gray>-</dark_gray> <gray>Graphical menu</gray>
+    <white>/music collect [id] [title]</white> <dark_gray>-</dark_gray> <gray>Save a song (no args = current track)</gray>
+    <white>/music catalogue \<list | create | play | add | remove | delete></white> <dark_gray>-</dark_gray> <gray>Manage playlists</gray>
+    <white>/music login \<netease | bilibili | kugou | kugouconcept></white> <dark_gray>-</dark_gray> <gray>Admin QR login</gray>
+    <white>/music lang [code] | kill | register</white> <dark_gray>-</dark_gray> <gray>Language / reset player / re-register service</gray>
   error: "<red>Something went wrong while running that command, check the server console for details.</red>"
 
 voicechat:
@@ -38,7 +39,7 @@ voicechat:
 
 play:
   all-selected: "<gray>All sources: playing the </gray><white><source></white><gray> result.</gray>"
-  usage: '<gray>Usage: <white>/music play \<song title | Spotify link></white></gray>'
+  usage: '<gray>Usage: <white>/music play \<song title></white></gray>'
   loading: "<gray>Loading songs...</gray>"
   # <player> = 执行命令的玩家, <track> = 曲目信息（带链接）
   queued: "<gray><player> queued <track></gray>"
@@ -47,8 +48,6 @@ play:
   # <reason> = 加载失败原因
   failed: "<red>Failed to load that track: <reason></red>"
   failed-internal: "<red>That track failed to load, check the server console for details.</red>"
-  spotify-not-configured: "<yellow>Spotify is not configured (spotify.client-id / spotify.client-secret in config.yml). Trying a normal search instead.</yellow>"
-  spotify-failed: "<red>Could not look up that Spotify track: <reason></red>"
   error-timeout: "<red>The music server did not respond in time.</red> <gray>Try again later or use another link.</gray>"
   error-disconnected: "<red>The music server closed the connection mid-transfer (anti-leech protection, or a broken CDN slice).</red> <gray>Downloading the file and putting it into the music folder usually works.</gray>"
   error-unreachable: "<red>Could not reach the music server.</red> <gray>Check the link and the server's network.</gray>"
@@ -61,6 +60,8 @@ play:
   unsupported-platform: '<red><platform> links are not supported.</red> <gray>Search for the song instead: <white>/music play \<song title></white></gray>'
 
 search:
+  next-page: "<gray>-- page <page> --</gray> <green>[Next page]</green>"
+  next-page-hover: "<gray>Show the next page of results</gray>"
   usage: '<gray>Usage: <white>/music search \<song></white></gray>'
   loading: "<gray>Searching...</gray>"
   header: "<gray>Found <count> result(s):</gray>"
@@ -160,6 +161,8 @@ tabcomplete:
   source-netease: "NetEase search (login required)"
   source-youtube: "YouTube search"
   source-soundcloud: "SoundCloud search"
+  source-kugou: "Kugou search"
+  source-kugouconcept: "Kugou Concept search"
   collect: "Save the current song to My Likes"
   like: "Same as /music collect (save current song)"
   catalogue: "Manage your saved catalogues"
@@ -197,6 +200,9 @@ tabcomplete:
   bassboost-value: "Enter a number between 0 and 200"
 
 # ── dialog menu (1.21.7+) ─────────────────────────────────────────
+register:
+  ok: "<green>Voice chat service re-registered.</green>"
+
 menu:
   collect:
     title: "Save song"
@@ -262,6 +268,10 @@ menu:
     login-netease-tip: "Log in to NetEase with a QR code (admin)"
     login-bilibili: "Bilibili login"
     login-bilibili-tip: "Log in to Bilibili with a QR code (admin)"
+    login-kugou: "Kugou login"
+    login-kugou-tip: "Log in to Kugou with a QR code (admin)"
+    login-kugouconcept: "Kugou Concept login"
+    login-kugouconcept-tip: "Log in to Kugou Concept with a QR code (admin)"
     logout: "Log out"
     logout-tip: "Delete every saved account credential (admin)"
     kill: "Restart player"
@@ -271,11 +281,6 @@ menu:
     back: "Back"
     close: "Close"
   results:
-    prev-page: "[Previous]"
-    next-page: "[Next]"
-    prev-tip: "Previous page"
-    next-tip: "Next page"
-    more: "<dark_gray><total> results; showing the first 14. Use </dark_gray><white>/music search</white><dark_gray> for more.</dark_gray>"
     title: "Results · <source>"
     song-title: "Song actions"
     song-hint: "<dark_gray>Play it, or save it to My Likes.</dark_gray>"
@@ -340,12 +345,14 @@ lyrics:
 # Per-player default search/play source
 source:
   bilibili: "Bilibili"
+  kugou: "Kugou"
+  kugouconcept: "Kugou Concept"
   netease: "NetEase"
   youtube: "YouTube"
   soundcloud: "SoundCloud"
   all: "All sources"
   current: "<gray>Your default source: </gray><white><source></white>"
-  available: '<gray>Available: </gray><white>bilibili</white><gray> / </gray><white>netease</white><gray> / </gray><white>youtube</white><gray> / </gray><white>soundcloud</white> <dark_gray>(/music source \<id>)</dark_gray>'
+  available: '<gray>Available: </gray><white>bilibili</white><gray> / </gray><white>netease</white><gray> / </gray><white>youtube</white><gray> / </gray><white>soundcloud</white><gray> / </gray><white>kugou</white><gray> / </gray><white>kugouconcept</white> <dark_gray>(/music source \<id>)</dark_gray>'
   set: "<green>Default source set to </green><white><source></white><gray>; /music play and /music search will use it.</gray>"
   reset: "<green>Restored the server default source: </green><white><source></white>"
   unknown: "<red>Unknown source: </red><white><input></white><gray>. Use bilibili / netease / youtube / soundcloud.</gray>"
@@ -354,6 +361,8 @@ source:
 platform:
   netease: "NetEase"
   bilibili: "Bilibili"
+  kugou: "Kugou"
+  kugouconcept: "Kugou Concept"
 
 login:
   usage: '<red>Usage: </red><white>/music login \<netease|bilibili> [status|logout|cookie \<value>]</white>'
@@ -413,8 +422,20 @@ catalogue:
 
 collect:
   no-track: "<gray>Nothing is playing right now.</gray>"
-  usage: '<red>Usage: </red><white>/music collect \<id> [title]</white><gray> or </gray><white>/music like</white>'
+  usage: '<red>Usage: </red><white>/music collect [id] [title]</white><gray> (no args collects the current track)</gray>'
   choose: "<gray>Save </gray><white><title></white><gray> to which catalogue?</gray>"
   choose-hint: "<dark_gray>Click a catalogue above to save it.</dark_gray>"
   target: "<gray><index>. </gray><white><name></white> <dark_gray>(<count> tracks)</dark_gray>"
   target-hover: "<gray>Save to this catalogue</gray>"
+
+youtube:
+  disabled: "<yellow>YouTube is disabled: set music.all-sources.youtube: true in config.yml (requires YouTube access).</yellow>"
+
+soundcloud:
+  disabled: "<yellow>SoundCloud is disabled: set music.all-sources.soundcloud: true in config.yml (requires SoundCloud access).</yellow>"
+
+kugou:
+  vip-badge: "<gold>[VIP]</gold>"
+  no-results: "<red>No Kugou results.</red>"
+  error: "<red>Kugou request failed: <reason></red>"
+  no-url: "<red>No playable URL for this track (VIP or region lock).</red>"
