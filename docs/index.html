@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimpleVoiceChatMusic · 发布页</title>
+<style>
+  :root{
+    --cyan:#00d4ff; --purple:#8b5cf6; --bg:#070b14; --panel:rgba(16,24,40,.72);
+    --text:#e8eefc; --muted:#93a4c3; --line:rgba(120,180,255,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg); color:var(--text); overflow-x:hidden;
+    background-image:
+      radial-gradient(900px 500px at 15% -10%, rgba(0,212,255,.20), transparent 60%),
+      radial-gradient(800px 500px at 90% 0%, rgba(139,92,246,.20), transparent 55%),
+      radial-gradient(700px 600px at 50% 110%, rgba(0,255,200,.10), transparent 60%);
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 90px}
+  .hero{text-align:center;padding:56px 18px 30px;position:relative}
+  .badge{
+    display:inline-block;padding:6px 14px;border-radius:999px;font-size:13px;
+    color:var(--cyan);border:1px solid rgba(0,212,255,.35);background:rgba(0,212,255,.08);
+    letter-spacing:.4px;margin-bottom:18px
+  }
+  h1{
+    margin:0;font-size:54px;line-height:1.08;letter-spacing:-1px;
+    background:linear-gradient(90deg,#fff 0%,var(--cyan) 45%,var(--purple) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 40px rgba(0,212,255,.18)
+  }
+  .sub{margin:14px 0 0;color:var(--muted);font-size:17px}
+  .meta{margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .pill{
+    padding:7px 13px;border-radius:10px;font-size:13px;color:#cfe3ff;
+    background:rgba(255,255,255,.04);border:1px solid var(--line)
+  }
+  .cta{margin-top:30px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:12px;
+    text-decoration:none;font-weight:600;font-size:15px;transition:.2s;border:1px solid transparent
+  }
+  .btn.primary{background:linear-gradient(135deg,var(--cyan),#3b82f6);color:#041018;box-shadow:0 8px 30px rgba(0,212,255,.28)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,212,255,.40)}
+  .btn.ghost{border-color:var(--line);color:#dbe8ff;background:rgba(255,255,255,.03)}
+  .btn.ghost:hover{border-color:rgba(0,212,255,.45);background:rgba(0,212,255,.07)}
+  h2{margin:56px 0 18px;font-size:24px;display:flex;align-items:center;gap:10px}
+  h2:before{content:"";width:5px;height:22px;border-radius:3px;background:linear-gradient(180deg,var(--cyan),var(--purple))}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;
+    backdrop-filter:blur(10px);transition:.22s
+  }
+  .card:hover{transform:translateY(-3px);border-color:rgba(0,212,255,.40);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .card .ico{font-size:24px}
+  .card h3{margin:10px 0 6px;font-size:16px}
+  .card p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.6}
+  table{width:100%;border-collapse:collapse;font-size:14px;overflow:hidden;border-radius:14px}
+  .tablewrap{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+  th,td{padding:12px 14px;text-align:left;border-bottom:1px solid rgba(120,180,255,.10)}
+  th{color:#bcd4ff;font-weight:600;background:rgba(0,212,255,.06);font-size:13px}
+  td{color:#d8e4fb}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.025)}
+  code{
+    font-family:Consolas,monospace;font-size:12.5px;color:#9ef1ff;
+    background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.16);
+    padding:2px 7px;border-radius:6px;
+  }
+  pre{
+    background:rgba(3,8,18,.85);border:1px solid var(--line);border-radius:14px;
+    padding:18px;overflow:auto;font-size:13px;line-height:1.65;color:#cfe3ff
+  }
+  .tag{display:inline-block;font-size:12px;padding:3px 9px;border-radius:999px;margin-right:6px}
+  .tag.new{color:#052e1b;background:#4ade80}
+  .tag.fix{color:#052e1b;background:#facc15}
+  .tag.del{color:#3b0a0a;background:#fb7185}
+  .foot{margin-top:70px;text-align:center;color:#6f819f;font-size:13px;line-height:1.9}
+  .foot a{color:#7dd3fc;text-decoration:none}
+  .glow{position:fixed;pointer-events:none;filter:blur(70px);opacity:.35;z-index:-1}
+  .g1{width:320px;height:320px;background:#00d4ff;top:-80px;left:-60px;border-radius:50%}
+  .g2{width:360px;height:360px;background:#8b5cf6;top:180px;right:-100px;border-radius:50%}
+  @media(max-width:640px){h1{font-size:38px}.hero{padding-top:36px}}
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="badge">Paper · Purpur · Leaves 1.21.x</div>
+    <h1>SimpleVoiceChatMusic</h1>
+    <p class="sub">在语音聊天里，和朋友一起听歌 🎵</p>
+    <div class="meta">
+      <span class="pill">版本 3.3.0</span>
+      <span class="pill">需要 Simple Voice Chat</span>
+      <span class="pill">Java 25</span>
+      <span class="pill">多音源 · 歌单 · 歌词 · 图形菜单</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/Xiaowen-mc/SimpleVoiceChatMusic/releases/download/v3.3.0/SimpleVoiceChatMusic-3.3.0.jar">⬇ 下载 3.3.0</a>
+      <a class="btn ghost" href="https://github.com/Xiaowen-mc/SimpleVoiceChatMusic">🔗 GitHub 仓库</a>
+      <a class="btn ghost" href="https://github.com/Xiaowen-mc/SimpleVoiceChatMusic/releases/tag/v3.3.0">📄 更新日志</a>
+    </div>
+  </header>
+
+  <h2>它能做什么</h2>
+  <div class="grid">
+    <div class="card"><div class="ico">🎧</div><h3>语音组一起听</h3><p>音乐通过 Simple Voice Chat 播放，同组玩家都能听到，距离衰减自然。</p></div>
+    <div class="card"><div class="ico">🌐</div><h3>多音源</h3><p>B 站、网易云、酷狗、酷狗概念版、YouTube、SoundCloud、直链。</p></div>
+    <div class="card"><div class="ico">💛</div><h3>我的音乐</h3><p>收藏歌曲、自建歌单，每位玩家独立存储，可单独播放或删除。</p></div>
+    <div class="card"><div class="ico">🖥</div><h3>图形菜单</h3><p>Paper 1.21.7+ 的播放器式界面：搜索、队列、音量、设置、登录。</p></div>
+    <div class="card"><div class="ico">📜</div><h3>滚动歌词</h3><p>ActionBar 跟随进度，网易云 / 酷狗官方 LRC，可调颜色与字体。</p></div>
+    <div class="card"><div class="ico">🔁</div><h3>播放模式</h3><p>顺序 / 单曲循环 / 列表循环，队列上限 1000 首。</p></div>
+    <div class="card"><div class="ico">🔑</div><h3>会员共享</h3><p>管理员扫码一次，全服共享网易云 / 酷狗会员曲库。</p></div>
+    <div class="card"><div class="ico">🚫</div><h3>零缓存</h3><p>只解析音频流，不下载、不占磁盘。</p></div>
+  </div>
+
+  <h2>新增音源：酷狗 / 酷狗概念版</h2>
+  <div class="grid">
+    <div class="card"><div class="ico">🐧</div><h3>酷狗音乐</h3><p>搜索、播放、扫码登录、Cookie 兜底，会员歌曲可放。</p></div>
+    <div class="card"><div class="ico">✨</div><h3>酷狗概念版</h3><p>独立 appid、独立 CDN、独立会员体系，与标准版互不影响。</p></div>
+    <div class="card"><div class="ico">🏷</div><h3>VIP 标识</h3><p>会员 / 付费歌曲显示金色 [VIP]，聊天栏、菜单、全部音源一致。</p></div>
+    <div class="card"><div class="ico">📝</div><h3>酷狗歌词</h3><p>官方 LRC，按播放进度滚动，缓存后不再重复请求。</p></div>
+  </div>
+
+  <h2>支持音源</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>音源</th><th>搜索</th><th>会员</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>B 站</td><td>✅</td><td>—</td><td>BV/av、番剧、b23.tv，支持分 P</td></tr>
+        <tr><td>网易云</td><td>✅</td><td>✅ 扫码</td><td>歌曲 / 歌单，登录后放会员歌</td></tr>
+        <tr><td>酷狗音乐</td><td>✅</td><td>✅ 扫码</td><td>新增，支持 VIP 标识与歌词</td></tr>
+        <tr><td>酷狗概念版</td><td>✅</td><td>✅ 扫码</td><td>独立会员体系</td></tr>
+        <tr><td>YouTube</td><td>✅</td><td>—</td><td>默认关闭，需能访问 YouTube</td></tr>
+        <tr><td>SoundCloud</td><td>✅</td><td>—</td><td>默认关闭</td></tr>
+        <tr><td>直链</td><td>—</td><td>—</td><td>mp3 / flac / m4a / ogg</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>常用指令</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>指令</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>/music play &lt;链接 | 歌名&gt;</code></td><td>播放链接，或按默认音源搜索后播放</td></tr>
+        <tr><td><code>/music search &lt;关键词&gt;</code></td><td>聊天栏搜索，可翻页</td></tr>
+        <tr><td><code>/music now-playing | queue</code></td><td>当前播放 / 队列</td></tr>
+        <tr><td><code>/music skip | pause | resume | stop</code></td><td>播放控制</td></tr>
+        <tr><td><code>/music volume | bassboost</code></td><td>音量 / 低音</td></tr>
+        <tr><td><code>/music loop &lt;off|one|all&gt;</code></td><td>循环模式</td></tr>
+        <tr><td><code>/music source &lt;…&gt;</code></td><td>默认音源切换</td></tr>
+        <tr><td><code>/music menu</code></td><td>图形菜单</td></tr>
+        <tr><td><code>/music collect [标识] [标题]</code></td><td>收藏歌曲（不带参数收藏当前播放）</td></tr>
+        <tr><td><code>/music catalogue</code></td><td>管理收藏歌单</td></tr>
+        <tr><td><code>/music login &lt;netease|bilibili|kugou|kugouconcept&gt;</code></td><td>管理员扫码登录</td></tr>
+        <tr><td><code>/music lang | kill | register</code></td><td>语言 / 重置播放器 / 重注册服务</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>安装</h2>
+  <div class="grid">
+    <div class="card"><h3>① 安装语音</h3><p>服务器安装 Simple Voice Chat（服务端插件 + 客户端 mod）。</p></div>
+    <div class="card"><h3>② 放入插件</h3><p>把 <code>SimpleVoiceChatMusic-3.3.0.jar</code> 放进 <code>plugins/</code> 并重启。</p></div>
+    <div class="card"><h3>③ 可选登录</h3><p>管理员执行 <code>/music login kugou</code> 或 <code>netease</code> 扫码。</p></div>
+    <div class="card"><h3>④ 开听</h3><p>玩家加入语音组 → <code>/music menu</code> 或 <code>/music play 歌名</code>。</p></div>
+  </div>
+
+  <h2>3.3.0 更新</h2>
+  <div class="grid">
+    <div class="card"><span class="tag new">新增</span><h3>酷狗 / 概念版</h3><p>搜索、播放、扫码登录、歌词、VIP 标识；全部音源每源 10 条可配。</p></div>
+    <div class="card"><span class="tag fix">优化</span><h3>菜单搜索</h3><p>B 站分段抓取修复 results=0，单列展示，移除翻页按钮。</p></div>
+    <div class="card"><span class="tag fix">优化</span><h3>指令精简</h3><p>删除重复子命令与独立注册命令，帮助文本同步更新。</p></div>
+    <div class="card"><span class="tag del">移除</span><h3>Spotify / Twitch</h3><p>Spotify 支持彻底移除；Twitch 不再注册，启动不再报错。</p></div>
+  </div>
+
+  <h2>配置摘要</h2>
+  <pre>music:
+  max-queue-size: 1000        # 队列上限
+  max-search-results: 10      # 聊天栏搜索每页条数
+  default-source: "all"       # 默认音源
+  all-sources:
+    youtube: false
+    soundcloud: false
+    per-source-limit: 10      # 全部音源每源条数
+
+menu:
+  enabled: true
+  queue-page-size: 20
+  search-results: 100         # 菜单搜索最多展示条数
+
+lyrics:
+  enabled: true
+  color: "blue"
+  bold: true</pre>
+
+  <footer class="foot">
+    <p>GPL-3.0 ｜ 原 Fabric 模组 <a href="https://github.com/ItzDerock/simplevoicechat-music">ItzDerock/simplevoicechat-music</a>（Apache-2.0）</p>
+    <p>Paper 移植与维护：GavinGoGaming、MrTron ｜ 本项目：<a href="https://github.com/Xiaowen-mc/SimpleVoiceChatMusic">Xiaowen-mc/SimpleVoiceChatMusic</a></p>
+    <p>反馈请附：插件版本、服务端版本、完整报错日志</p>
+  </footer>
+</div>
+</body>
+</html>
