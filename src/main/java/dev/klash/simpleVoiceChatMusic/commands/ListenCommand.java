@@ -24,14 +24,7 @@ public class ListenCommand implements Command {
     @Override
     public int execute(Player player, String[] args) {
         if (!WebPlayerServer.isRunning()) {
-            String reason = WebPlayerServer.startError();
-
-            if (reason == null || reason.isBlank()) {
-                Messages.send(player, "web.disabled");
-            } else {
-                Messages.send(player, "web.disabled-reason", Ph.raw("reason", reason));
-            }
-
+            Messages.send(player, "web.disabled");
             return 1;
         }
 
