@@ -109,6 +109,10 @@ public final class WebPlayerServer {
                     + " (set web.public-url for a public domain/IP)");
         }
 
+        while (publicUrl.endsWith("/")) {
+            publicUrl = publicUrl.substring(0, publicUrl.length() - 1);
+        }
+
         try {
             HttpServer created;
 
@@ -296,7 +300,8 @@ public final class WebPlayerServer {
 
     /** 生成带令牌的收听链接 */
     public static String link(String path) {
-        String base = publicUrl + path;
+        String normalized = path.startsWith("/") ? path : "/" + path;
+        String base = publicUrl + normalized;
 
         if (accessToken.isEmpty()) {
             return base;
