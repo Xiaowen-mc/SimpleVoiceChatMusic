@@ -255,6 +255,12 @@ public final class ModUtils {
         VoicechatConnection connection = VoiceChatPlugin.voicechatServerApi.getConnectionOf(source.getUniqueId());
 
         if (connection == null || !connection.isConnected()) {
+            Group bound = dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry.groupOf(source);
+
+            if (bound != null) {
+                return new CheckPlayerGroup(source, bound);
+            }
+
             Messages.send(source, "voicechat.not-connected");
             return null;
         }
@@ -262,6 +268,12 @@ public final class ModUtils {
         Group group = connection.getGroup();
 
         if (group == null) {
+            Group bound = dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry.groupOf(source);
+
+            if (bound != null) {
+                return new CheckPlayerGroup(source, bound);
+            }
+
             Messages.send(source, "voicechat.no-group");
             return null;
         }

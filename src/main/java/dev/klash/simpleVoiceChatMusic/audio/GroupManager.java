@@ -222,7 +222,8 @@ public class GroupManager {
                 }
 
                 // clean up if no players
-                if (this.connections.isEmpty()) {
+                if (this.connections.isEmpty() && !this.group.isPersistent()
+                        && !dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry.hasListener(this.group)) {
                     SimpleVoiceChatMusic.LOGGER.info("Group " + this.group.getName() + " is now empty. Cleaning up...");
                     this.cleanup();
                 }
@@ -392,6 +393,10 @@ public class GroupManager {
         }
     }
 
+    public Group getGroup() {
+        return group;
+    }
+
     public AudioPlayer getPlayer() {
         return this.lavaplayer;
     }
@@ -422,7 +427,8 @@ public class GroupManager {
         // 先快照收件人：cleanup() 会清空 connections，等任务在主线程执行时再查就没人了
         List<Player> recipients = new ArrayList<>();
         for (Player player : server.getOnlinePlayers()) {
-            if (this.connections.containsKey(player.getUniqueId())) {
+            if (this.connections.containsKey(player.getUniqueId())
+                    || dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry.isListening(player, this.group)) {
                 recipients.add(player);
             }
         }
@@ -497,7 +503,7 @@ public class GroupManager {
 
         AudioTrack track = this.lavaplayer.getPlayingTrack();
 
-        for (UUID uuid : this.connections.keySet()) {
+        for (UUID uuid : memberIds()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null || !player.isOnline()) {
                 continue;
@@ -541,7 +547,10 @@ public class GroupManager {
 
         // 玩家离开组或掉线：收起并清理对应的 BOSS 栏
         for (UUID uuid : new ArrayList<>(this.bossBars.keySet())) {
-            if (!this.connections.containsKey(uuid)) {
+            Player owner = Bukkit.getPlayer(uuid);
+            if (!this.connections.containsKey(uuid)
+                    && (owner == null || !dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry
+                    .isListening(owner, this.group))) {
                 this.hideBossBar(uuid);
             }
         }
@@ -591,7 +600,14 @@ public class GroupManager {
 
     /** 本组当前在听的玩家（音频通道存在的玩家），供歌词 ActionBar 使用 */
     public java.util.Set<UUID> listenerIds() {
-        return java.util.Set.copyOf(this.connections.keySet());
+        return java.util.Set.copyOf(memberIds());
+    }
+
+    /** 组内成员：SVC 连接 + 绑定到本组的网页/基岩听众 */
+    public java.util.Set<UUID> memberIds() {
+        java.util.Set<UUID> ids = new java.util.HashSet<>(this.connections.keySet());
+        ids.addAll(dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry.listenerIds(this.group));
+        return ids;
     }
 
     public void setBassBoost(float percentage) {

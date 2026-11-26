@@ -26,7 +26,7 @@ public final class CommandSuggestions {
 
     private static final List<String> SUBCOMMANDS = List.of(
             "play", "search", "now-playing", "queue", "skip",
-            "pause", "resume", "stop", "volume", "bassboost", "lang", "menu", "login", "source", "loop", "collect", "catalogue", "register", "kill"
+            "pause", "resume", "stop", "volume", "bassboost", "lang", "menu", "login", "source", "loop", "collect", "catalogue", "listen", "register", "kill"
     );
 
     private static final List<String> VOLUME_VALUES = List.of("0", "10", "25", "50", "75", "100");

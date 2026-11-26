@@ -321,6 +321,7 @@ menu:
     confirm: "确定"
     cancel: "取消"
   unsupported: "<red>当前服务器不支持 Dialog（需要 Paper 1.21.7+）。</red>"
+  disabled-reason: "<yellow>网页收听未启动：<reason></yellow>"
   disabled: "<red>图形菜单已被服主关闭（config.yml 的 menu.enabled）。</red>"
 netease:
   disabled: "<red>网易云音源已在配置中关闭（netease.enabled）。</red>"
@@ -431,3 +432,11 @@ kugou:
   no-results: "<red>酷狗没有找到相关歌曲。</red>"
   error: "<red>酷狗接口请求失败：<reason></red>"
   no-url: "<red>这首歌暂时拿不到播放地址（可能需要会员或版权限制）。</red>"
+
+web:
+  disabled: "<yellow>网页收听未启用：请在 config.yml 设置 web.enabled: true</yellow>"
+  list-header: "<gray>网页收听房间：</gray>"
+  room-line: "<white><name></white> <gray>→</gray> <aqua><url></aqua>"
+  room-not-found: "<red>没有找到这个语音组。</red>"
+  url: "<gray>用浏览器打开：</gray><aqua><url></aqua><gray>（房间：<name>，只读收听）</gray>"
+  "off": "<gray>已关闭网页收听。</gray>"

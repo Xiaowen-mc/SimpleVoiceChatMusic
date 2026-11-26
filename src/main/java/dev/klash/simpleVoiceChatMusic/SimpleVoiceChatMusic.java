@@ -5,6 +5,7 @@ import dev.klash.simpleVoiceChatMusic.audio.MusicManager;
 import dev.klash.simpleVoiceChatMusic.commands.BassboostCommand;
 import dev.klash.simpleVoiceChatMusic.commands.KillCommand;
 import dev.klash.simpleVoiceChatMusic.commands.LangCommand;
+import dev.klash.simpleVoiceChatMusic.commands.ListenCommand;
 import dev.klash.simpleVoiceChatMusic.commands.MenuCommand;
 import dev.klash.simpleVoiceChatMusic.commands.LoginCommand;
 import dev.klash.simpleVoiceChatMusic.commands.CatalogueCommand;
@@ -93,6 +94,8 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
         dev.klash.simpleVoiceChatMusic.audio.NetEaseLogin.load();
         dev.klash.simpleVoiceChatMusic.audio.BilibiliLogin.load();
         dev.klash.simpleVoiceChatMusic.audio.KugouLogin.load();
+        dev.klash.simpleVoiceChatMusic.web.WebPlayerServer.start(this);
+
         // 每个玩家自己的默认音源偏好
         dev.klash.simpleVoiceChatMusic.config.PlayerPreferences.load();
 
@@ -139,6 +142,8 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
 
     @Override
     public void onDisable() {
+        dev.klash.simpleVoiceChatMusic.web.WebPlayerServer.stop();
+
         LOGGER.info("Cleaning up due to shutdown.");
 
         if (this.bossBarTask != null) {
@@ -204,6 +209,7 @@ public final class SimpleVoiceChatMusic extends JavaPlugin implements TabComplet
         subCommands.put("source", new SourceCommand());
         subCommands.put("loop", new LoopCommand());
         subCommands.put("collect", new CollectCommand());
+        subCommands.put("listen", new ListenCommand());
         subCommands.put("register", (player, args) -> {
             if (!player.hasPermission("simplevoicechatmusic.admin")) {
                 Messages.send(player, "general.no-permission");

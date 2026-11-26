@@ -765,6 +765,16 @@ public final class MusicDialogGui {
         return label;
     }
 
+    private static GroupManager resolveBoundGroup(Player player) {
+        Group bound = dev.klash.simpleVoiceChatMusic.web.WebListenerRegistry.groupOf(player);
+
+        if (bound == null) {
+            return null;
+        }
+
+        return MusicManager.getInstance().getGroup(bound, player.getServer());
+    }
+
     private static GroupManager resolveGroup(Player player) {
         try {
             if (VoiceChatPlugin.voicechatServerApi == null) {
@@ -775,12 +785,12 @@ public final class MusicDialogGui {
                     VoiceChatPlugin.voicechatServerApi.getConnectionOf(player.getUniqueId());
 
             if (connection == null || !connection.isConnected()) {
-                return null;
+                return resolveBoundGroup(player);
             }
 
             Group group = connection.getGroup();
             if (group == null) {
-                return null;
+                return resolveBoundGroup(player);
             }
 
             SimpleVoiceChatMusic plugin = SimpleVoiceChatMusic.getOrNull();

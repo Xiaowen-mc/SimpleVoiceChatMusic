@@ -64,6 +64,8 @@ music:
   # all = 一次并发搜索所有音源（BV 号 / 链接仍然直接播放，不会被搜索）
   # 玩家可以用 /music source <id> 或游戏内菜单单独修改自己的默认音源。
   default-source: "all"
+  # 基岩/网页玩家未绑定房间时默认操作的语音组
+  default-group: "音乐"
 
   # 同一个人连续执行 /music play、/music search 的冷却（毫秒），0 = 关闭。
   command-cooldown-ms: 1000
@@ -208,3 +210,19 @@ lyrics:
 
 # ─────────────────────────────────────────────────────────────────────────────
 
+# 网页收听（基岩 / 手机玩家）：给每个语音组生成只读收听房间
+web:
+  enabled: true
+  port: 14514
+  # 对外地址，例如 http://你的域名:8080；留空则自动使用服务器 IP
+  public-url: ""
+  # 访问令牌：链接必须带 ?token=...（首次打开后会种 HttpOnly 会话 Cookie）
+  # 留空会在启动时自动生成并写回本文件
+  token: ""
+  # 会话有效期（分钟）
+  session-minutes: 120
+  # HTTPS（需要 PKCS12 证书，路径相对插件目录）
+  ssl:
+    enabled: false
+    keystore: "web-keystore.p12"
+    password: ""

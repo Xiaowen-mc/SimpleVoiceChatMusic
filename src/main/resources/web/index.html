@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>语音组收听</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:radial-gradient(800px 500px at 20% 0%,#0e2a3a,#05070d 60%);
+       font-family:system-ui,"Microsoft YaHei",sans-serif;color:#e6f2ff}
+  .card{width:min(520px,92vw);background:rgba(12,20,34,.88);border:1px solid rgba(0,212,255,.2);
+        border-radius:18px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .room{font-size:13px;color:#7dd3fc;letter-spacing:.4px;margin-bottom:6px}
+  h1{font-size:21px;margin:0 0 2px;line-height:1.35}
+  .muted{color:#8aa2c2;font-size:13px;margin-bottom:14px;min-height:18px}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:#8aa2c2;margin-bottom:14px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#64748b}
+  .dot.live{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.8)}
+  .bar{height:6px;border-radius:4px;background:#0a1522;overflow:hidden;margin:6px 0 4px}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00d4ff,#8b5cf6);
+           border-radius:4px;transition:width .25s linear}
+  .time{display:flex;justify-content:space-between;font-size:12px;color:#6f819f}
+  .start{margin-top:16px;width:100%;padding:11px;border:none;border-radius:10px;cursor:pointer;
+         background:linear-gradient(135deg,#00d4ff,#3b82f6);color:#04121c;font-weight:700;font-size:15px}
+  .start[hidden]{display:none}
+  audio{display:none}
+  .foot{margin-top:14px;font-size:12px;color:#5f7290;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="room" id="room">正在连接…</div>
+  <h1 id="title">加载中</h1>
+  <div class="muted" id="author"></div>
+  <div class="status"><span class="dot" id="dot"></span><span id="state">空闲</span></div>
+  <div class="bar"><i id="progress"></i></div>
+  <div class="time"><span id="pos">0:00</span><span id="dur">0:00</span></div>
+  <button class="start" id="start" hidden>点击开始收听</button>
+  <audio id="audio" preload="none"></audio>
+  <div class="foot">只读收听 · 进度跟随服务器，不可拖动</div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let room = (new URLSearchParams(location.search).get('room') || '').replace(/^=+/, '');
+let currentKey = '';
+let pending = false;
+let lastNow = null;
+let lastFetch = 0;
+
+function fmt(ms){
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+async function init(){
+  if (room) return;
+  try{
+    const now = await (await fetch('/api/default')).json();
+    if (!now.error){ room = now.id; }
+  }catch(e){}
+}
+
+function playFrom(now){
+  const audio = $('audio');
+  audio.src = '/media?room=' + encodeURIComponent(room) + '&t=' + Date.now();
+  const start = () => {
+    try { audio.currentTime = Math.max(0, (now.positionMs || 0) / 1000); } catch(e){}
+    audio.play().then(() => { $('start').hidden = true; }).catch(() => { $('start').hidden = false; });
+  };
+  if (audio.readyState >= 1) start(); else audio.addEventListener('loadedmetadata', start, {once:true});
+}
+
+function render(now){
+  lastNow = now;
+  lastFetch = performance.now();
+  $('room').textContent = '正在收听：' + (now.name || '');
+  $('title').textContent = now.playing ? (now.title || '未知歌曲') : '当前没有播放';
+  $('author').textContent = now.playing ? (now.author || '') : '';
+  $('state').textContent = now.playing ? (now.paused ? '已暂停' : '播放中') : '空闲';
+  $('dot').className = 'dot' + (now.playing ? ' live' : '');
+  $('dur').textContent = now.durationMs ? fmt(now.durationMs) : '0:00';
+  paint();
+}
+
+function paint(){
+  if (!lastNow) return;
+  let pos = lastNow.positionMs || 0;
+
+  if (lastNow.playing && !lastNow.paused) pos += performance.now() - lastFetch;
+
+  if (lastNow.durationMs) pos = Math.min(pos, lastNow.durationMs);
+  $('progress').style.width = lastNow.durationMs ? (pos / lastNow.durationMs * 100) + '%' : '0%';
+  $('pos').textContent = fmt(pos);
+}
+
+async function tick(){
+  if (!room){ $('title').textContent = '未找到房间'; $('state').textContent = ''; return; }
+  try{
+    const now = await (await fetch('/api/now?room=' + encodeURIComponent(room) + '&_=' + Date.now())).json();
+    if (now.error){ $('title').textContent = '房间不存在'; return; }
+    render(now);
+
+    if (!now.playing){ $('audio').pause(); currentKey = ''; return; }
+
+    const key = (now.startedAt || 0) + '|' + (now.title || '');
+    if (now.direct && key !== currentKey && !pending){
+      pending = true;
+      currentKey = key;
+      playFrom(now);
+      setTimeout(() => { pending = false; }, 900);
+    }
+
+    if (now.paused && !$('audio').paused) $('audio').pause();
+    if (!now.paused && $('audio').paused && !pending) $('audio').play().catch(() => { $('start').hidden = false; });
+  }catch(e){}
+}
+
+$('start').onclick = () => { $('start').hidden = true; if (lastNow) playFrom(lastNow); };
+$('audio').addEventListener('ended', () => {
+  setTimeout(() => { if ($('audio').ended) $('audio').play().catch(()=>{}); }, 350);
+});
+setInterval(paint, 250);
+
+(async () => { await init(); tick(); setInterval(tick, 1200); })();
+</script>
+</body>
+</html>
