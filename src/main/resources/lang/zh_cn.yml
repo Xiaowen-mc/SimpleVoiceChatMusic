@@ -321,7 +321,6 @@ menu:
     confirm: "确定"
     cancel: "取消"
   unsupported: "<red>当前服务器不支持 Dialog（需要 Paper 1.21.7+）。</red>"
-  disabled-reason: "<yellow>网页收听未启动：<reason></yellow>"
   disabled: "<red>图形菜单已被服主关闭（config.yml 的 menu.enabled）。</red>"
 netease:
   disabled: "<red>网易云音源已在配置中关闭（netease.enabled）。</red>"
@@ -434,6 +433,7 @@ kugou:
   no-url: "<red>这首歌暂时拿不到播放地址（可能需要会员或版权限制）。</red>"
 
 web:
+  disabled-reason: "<yellow>网页收听未启动：<reason></yellow>"
   disabled: "<yellow>网页收听未启用：请在 config.yml 设置 web.enabled: true</yellow>"
   list-header: "<gray>网页收听房间：</gray>"
   room-line: "<white><name></white> <gray>→</gray> <aqua><url></aqua>"

@@ -329,7 +329,6 @@ menu:
     confirm: "Confirm"
     cancel: "Cancel"
   unsupported: "<red>This server does not support dialogs (Paper 1.21.7+ required).</red>"
-  disabled-reason: "<yellow>Web listening is not running: <reason></yellow>"
   disabled: "<red>The dialog menu is disabled (menu.enabled in config.yml).</red>"
 netease:
   disabled: "<red>The NetEase source is disabled (netease.enabled).</red>"
@@ -442,6 +441,7 @@ kugou:
   no-url: "<red>No playable URL for this track (VIP or region lock).</red>"
 
 web:
+  disabled-reason: "<yellow>Web listening is not running: <reason></yellow>"
   disabled: "<yellow>Web listening is disabled: set web.enabled: true in config.yml</yellow>"
   list-header: "<gray>Web listening rooms:</gray>"
   room-line: "<white><name></white> <gray>→</gray> <aqua><url></aqua>"
