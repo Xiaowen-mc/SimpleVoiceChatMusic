@@ -97,7 +97,16 @@ public final class LyricTask implements Runnable {
 
         if (track.getIdentifier().startsWith("kugou://")
                 || track.getIdentifier().startsWith("kugouconcept://")) {
-            lines = KugouApi.lyricsFor(track.getIdentifier(), track.getDuration());
+            dev.klash.simpleVoiceChatMusic.audio.TrackMetadata.Meta kugouMeta =
+                    dev.klash.simpleVoiceChatMusic.audio.TrackMetadata.get(track.getInfo().uri);
+
+            if (kugouMeta == null) {
+                kugouMeta = dev.klash.simpleVoiceChatMusic.audio.TrackMetadata.get(track.getIdentifier());
+            }
+            String kugouTitle = kugouMeta != null ? kugouMeta.title() : track.getInfo().title;
+            String kugouArtist = kugouMeta != null ? kugouMeta.author() : track.getInfo().author;
+            lines = KugouApi.lyricsFor(track.getIdentifier(), track.getDuration(),
+                    kugouTitle, kugouArtist);
 
             if (lines == null) {
                 clearIfNeeded(group, listeners);

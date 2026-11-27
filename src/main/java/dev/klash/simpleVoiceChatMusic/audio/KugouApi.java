@@ -196,7 +196,7 @@ public final class KugouApi {
      */
     @Nullable
     public static List<NetEaseApi.LyricLine> lyricsFor(String identifier) {
-        return lyricsFor(identifier, 0L);
+        return lyricsFor(identifier, 0L, "", "");
     }
 
     /**
@@ -205,7 +205,8 @@ public final class KugouApi {
      * <p>会按歌曲时长挑选最匹配的歌词候选，避免拿到现场版/片段版导致不同步。</p>
      */
     @Nullable
-    public static List<NetEaseApi.LyricLine> lyricsFor(String identifier, long durationMs) {
+    public static List<NetEaseApi.LyricLine> lyricsFor(String identifier, long durationMs,
+                                                       String title, String artist) {
         List<NetEaseApi.LyricLine> cached = LYRICS.get(identifier);
 
         if (cached != null) {
@@ -239,10 +240,28 @@ public final class KugouApi {
                         }
                     }
 
-                    if (durationMs > 0) {
-                        ordered.sort(java.util.Comparator.comparingLong(candidate ->
-                                Math.abs(longOf(candidate, "duration") - durationMs)));
-                    }
+                    String wantedTitle = normalize(title);
+                    String wantedArtist = normalize(artist);
+
+                    ordered.sort(java.util.Comparator.comparingLong(candidate -> {
+                        String song = normalize(stringOf(candidate, "song"));
+                        String singer = normalize(stringOf(candidate, "singer"));
+                        long score = 0L;
+
+                        if (!wantedTitle.isEmpty() && !song.isEmpty()) {
+                            score += song.contains(wantedTitle) || wantedTitle.contains(song) ? 0 : 2000;
+                        }
+
+                        if (!wantedArtist.isEmpty() && !singer.isEmpty()) {
+                            score += singer.contains(wantedArtist) || wantedArtist.contains(singer) ? 0 : 500;
+                        }
+
+                        if (durationMs > 0) {
+                            score += Math.abs(longOf(candidate, "duration") - durationMs) / 1000;
+                        }
+
+                        return score;
+                    }));
 
                     List<NetEaseApi.LyricLine> best = List.of();
 
@@ -275,6 +294,13 @@ public final class KugouApi {
                         if (best.size() >= 8) {
                             break;
                         }
+                    }
+
+                    if (SimpleVoiceChatMusic.LOGGER != null) {
+                        SimpleVoiceChatMusic.LOGGER.info("[Kugou] lyrics for " + title + " / " + artist
+                                + ": " + best.size() + " lines"
+                                + (ordered.isEmpty() ? "" : ", top candidate="
+                                + stringOf(ordered.get(0), "song") + " - " + stringOf(ordered.get(0), "singer")));
                     }
 
                     LYRICS.put(identifier, best);
@@ -832,6 +858,15 @@ public final class KugouApi {
             builder.append(chars.charAt(ThreadLocalRandom.current().nextInt(chars.length())));
         }
         return builder.toString();
+    }
+
+    private static String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[【】\\[\\]「」『』《》<>()（）\\-_,，.。!！?？\\s]", "");
     }
 
     private static long parseLong(String value) {
