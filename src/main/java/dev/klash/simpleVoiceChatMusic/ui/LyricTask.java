@@ -65,6 +65,20 @@ public final class LyricTask implements Runnable {
         }
     }
 
+    /** 去掉 B 站等标题里的装饰词，提高网易云匹配率 */
+    private static String cleanTitle(String raw) {
+        if (raw == null) {
+            return "";
+        }
+
+        String text = raw
+                .replaceAll("[【】\\[\\]「」『』《》<>()（）]", " ")
+                .replaceAll("(?i)\\b(official|mv|lyric|video|audio|cover|live|4k|8k|hd|hq|remix)\\b", " ")
+                .replaceAll("翻唱|官方|高音质|无损|纯享|现场版|完整版|伴奏|片段", " ");
+
+        return text.replaceAll("\\s+", " ").trim();
+    }
+
     private void tickGroup(GroupManager group, PluginSettings settings, TextColor color,
                            boolean bold, Key font) {
         List<UUID> listeners = List.copyOf(group.listenerIds());
@@ -81,8 +95,9 @@ public final class LyricTask implements Runnable {
         NetEaseApi.Song song = NetEaseApi.metaFor(track.getIdentifier());
         List<NetEaseApi.LyricLine> lines;
 
-        if (track.getIdentifier().startsWith("kugou://")) {
-            lines = KugouApi.lyricsFor(track.getIdentifier());
+        if (track.getIdentifier().startsWith("kugou://")
+                || track.getIdentifier().startsWith("kugouconcept://")) {
+            lines = KugouApi.lyricsFor(track.getIdentifier(), track.getDuration());
 
             if (lines == null) {
                 clearIfNeeded(group, listeners);
@@ -107,13 +122,12 @@ public final class LyricTask implements Runnable {
                 meta = dev.klash.simpleVoiceChatMusic.audio.TrackMetadata.get(track.getInfo().uri);
             }
 
-            String query = meta != null
-                    ? (meta.author().isBlank() ? meta.title() : meta.author() + " " + meta.title())
-                    : track.getInfo().title
-                    + (track.getInfo().author == null || track.getInfo().author.isBlank()
-                    ? "" : " " + track.getInfo().author);
+            String title = meta != null ? meta.title() : track.getInfo().title;
+            String author = meta != null ? meta.author() : track.getInfo().author;
+            String query = cleanTitle(title)
+                    + (author == null || author.isBlank() ? "" : " " + cleanTitle(author));
 
-            lines = NetEaseApi.lyricsForTitle(query);
+            lines = NetEaseApi.lyricsForTitle(query, track.getDuration());
 
             if (lines == null) {
                 clearIfNeeded(group, listeners);

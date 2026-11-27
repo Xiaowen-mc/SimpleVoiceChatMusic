@@ -136,7 +136,12 @@ public final class NetEaseApi {
      */
     @Nullable
     public static List<LyricLine> lyricsForTitle(@Nullable String title) {
-        String key = normalizeTitle(title);
+        return lyricsForTitle(title, 0L);
+    }
+
+    @Nullable
+    public static List<LyricLine> lyricsForTitle(@Nullable String title, long durationMs) {
+        String key = normalizeTitle(title) + "|" + (durationMs > 0 ? durationMs / 5000 : 0);
 
         if (key.isEmpty()) {
             return java.util.Collections.emptyList();
@@ -148,7 +153,7 @@ public final class NetEaseApi {
         }
 
         if (TITLE_FETCHING.add(key)) {
-            Thread worker = new Thread(() -> fetchTitleLyrics(key), "SVC-Music-Lyrics");
+            Thread worker = new Thread(() -> fetchTitleLyrics(key, durationMs), "SVC-Music-Lyrics");
             worker.setDaemon(true);
             worker.start();
         }
@@ -156,11 +161,18 @@ public final class NetEaseApi {
         return null;
     }
 
-    private static void fetchTitleLyrics(String key) {
+    private static void fetchTitleLyrics(String key, long durationMs) {
         List<LyricLine> lines = java.util.Collections.emptyList();
 
         try {
-            for (Song song : search(key, 5)) {
+            java.util.List<Song> results = search(key.contains("|") ? key.substring(0, key.indexOf('|')) : key, 10);
+
+            if (durationMs > 0) {
+                results.sort(java.util.Comparator.comparingLong(
+                        song -> Math.abs(song.durationMs() - durationMs)));
+            }
+
+            for (Song song : results) {
                 String raw = rawLyric(song.id());
 
                 if (raw == null || raw.isBlank()) {
@@ -967,6 +979,16 @@ public final class NetEaseApi {
             return lines;
         }
 
+        long offsetMs = 0L;
+        Matcher offsetMatcher = Pattern.compile("\\[offset:\\s*([+-]?\\d+)\\]").matcher(lrc);
+        if (offsetMatcher.find()) {
+            try {
+                offsetMs = Long.parseLong(offsetMatcher.group(1));
+            } catch (NumberFormatException ignored) {
+                offsetMs = 0L;
+            }
+        }
+
         Pattern timePattern = Pattern.compile("\\[(\\d{1,3}):(\\d{1,2})(?:[.:](\\d{1,3}))?]");
 
         for (String raw : lrc.split("\\r?\\n")) {
@@ -999,7 +1021,7 @@ public final class NetEaseApi {
             }
 
             for (long time : times) {
-                lines.add(new LyricLine(time, text));
+                lines.add(new LyricLine(Math.max(0L, time - offsetMs), text));
             }
         }
 

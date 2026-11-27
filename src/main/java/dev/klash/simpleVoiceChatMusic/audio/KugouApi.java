@@ -196,6 +196,16 @@ public final class KugouApi {
      */
     @Nullable
     public static List<NetEaseApi.LyricLine> lyricsFor(String identifier) {
+        return lyricsFor(identifier, 0L);
+    }
+
+    /**
+     * 酷狗歌词（LRC），null 表示正在异步获取。
+     *
+     * <p>会按歌曲时长挑选最匹配的歌词候选，避免拿到现场版/片段版导致不同步。</p>
+     */
+    @Nullable
+    public static List<NetEaseApi.LyricLine> lyricsFor(String identifier, long durationMs) {
         List<NetEaseApi.LyricLine> cached = LYRICS.get(identifier);
 
         if (cached != null) {
@@ -205,9 +215,14 @@ public final class KugouApi {
         if (FETCHING.add(identifier)) {
             Thread thread = new Thread(() -> {
                 try {
-                    String hash = identifier.replace("kugou://", "").split("/")[0];
-                    String search = httpGet("https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=&hash="
-                            + urlEncode(hash), null);
+                    String hash = identifier
+                            .replace("kugouconcept://", "")
+                            .replace("kugou://", "")
+                            .split("/")[0];
+
+                    String search = httpGet("https://krcs.kugou.com/search?ver=1&man=yes&client=mobi"
+                            + "&keyword=&duration=" + (durationMs > 0 ? durationMs : "")
+                            + "&hash=" + urlEncode(hash), null);
                     JsonObject root = JsonParser.parseString(search).getAsJsonObject();
                     JsonArray candidates = arrayOf(root, "candidates");
 
@@ -216,23 +231,53 @@ public final class KugouApi {
                         return;
                     }
 
-                    JsonObject first = candidates.get(0).getAsJsonObject();
-                    String id = stringOf(first, "id");
-                    String accesskey = stringOf(first, "accesskey");
+                    java.util.List<JsonObject> ordered = new java.util.ArrayList<>();
 
-                    String download = httpGet("https://lyrics.kugou.com/download?ver=1&client=pc&id="
-                            + urlEncode(id) + "&accesskey=" + urlEncode(accesskey)
-                            + "&fmt=lrc&charset=utf8", null);
-                    JsonObject lyricRoot = JsonParser.parseString(download).getAsJsonObject();
-                    String content = stringOf(lyricRoot, "content");
-
-                    if (content.isEmpty()) {
-                        LYRICS.put(identifier, List.of());
-                        return;
+                    for (JsonElement element : candidates) {
+                        if (element.isJsonObject()) {
+                            ordered.add(element.getAsJsonObject());
+                        }
                     }
 
-                    String lrc = new String(Base64.getDecoder().decode(content), StandardCharsets.UTF_8);
-                    LYRICS.put(identifier, NetEaseApi.parseLyric(lrc));
+                    if (durationMs > 0) {
+                        ordered.sort(java.util.Comparator.comparingLong(candidate ->
+                                Math.abs(longOf(candidate, "duration") - durationMs)));
+                    }
+
+                    List<NetEaseApi.LyricLine> best = List.of();
+
+                    for (int i = 0; i < Math.min(3, ordered.size()); i++) {
+                        JsonObject candidate = ordered.get(i);
+                        String id = stringOf(candidate, "id");
+                        String accesskey = stringOf(candidate, "accesskey");
+
+                        if (id.isEmpty() || accesskey.isEmpty()) {
+                            continue;
+                        }
+
+                        String download = httpGet("https://lyrics.kugou.com/download?ver=1&client=pc&id="
+                                + urlEncode(id) + "&accesskey=" + urlEncode(accesskey)
+                                + "&fmt=lrc&charset=utf8", null);
+                        JsonObject lyricRoot = JsonParser.parseString(download).getAsJsonObject();
+                        String content = stringOf(lyricRoot, "content");
+
+                        if (content.isEmpty()) {
+                            continue;
+                        }
+
+                        String lrc = new String(Base64.getDecoder().decode(content), StandardCharsets.UTF_8);
+                        List<NetEaseApi.LyricLine> parsed = NetEaseApi.parseLyric(lrc);
+
+                        if (parsed.size() > best.size()) {
+                            best = parsed;
+                        }
+
+                        if (best.size() >= 8) {
+                            break;
+                        }
+                    }
+
+                    LYRICS.put(identifier, best);
                 } catch (Exception e) {
                     LYRICS.put(identifier, List.of());
                 } finally {
