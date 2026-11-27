@@ -221,87 +221,35 @@ public final class KugouApi {
                             .replace("kugou://", "")
                             .split("/")[0];
 
-                    String search = httpGet("https://krcs.kugou.com/search?ver=1&man=yes&client=mobi"
-                            + "&keyword=&duration=" + (durationMs > 0 ? durationMs : "")
+                    java.util.List<JsonObject> hashCandidates = new java.util.ArrayList<>();
+                    String byHash = httpGet("https://krcs.kugou.com/search?ver=1&man=yes&client=mobi"
+                            + "&keyword=&duration=" + (durationMs > 0 ? durationMs / 1000 : "")
                             + "&hash=" + urlEncode(hash), null);
-                    JsonObject root = JsonParser.parseString(search).getAsJsonObject();
-                    JsonArray candidates = arrayOf(root, "candidates");
+                    collectCandidates(byHash, hashCandidates);
 
-                    if (candidates == null || candidates.isEmpty()) {
-                        LYRICS.put(identifier, List.of());
-                        return;
-                    }
+                    List<NetEaseApi.LyricLine> best = tryCandidates(hashCandidates, durationMs, title, artist);
 
-                    java.util.List<JsonObject> ordered = new java.util.ArrayList<>();
+                    if (best.size() < 4) {
+                        String keyword = (artist == null || artist.isBlank()) ? title
+                                : (title == null || title.isBlank() ? artist : artist + " " + title);
 
-                    for (JsonElement element : candidates) {
-                        if (element.isJsonObject()) {
-                            ordered.add(element.getAsJsonObject());
+                        if (keyword != null && !keyword.isBlank()) {
+                            java.util.List<JsonObject> keywordCandidates = new java.util.ArrayList<>();
+                            String byKeyword = httpGet("https://krcs.kugou.com/search?ver=1&man=yes&client=mobi"
+                                    + "&keyword=" + urlEncode(keyword)
+                                    + "&duration=" + (durationMs > 0 ? durationMs / 1000 : "")
+                                    + "&hash=", null);
+                            collectCandidates(byKeyword, keywordCandidates);
+
+                            List<NetEaseApi.LyricLine> fromKeyword =
+                                    tryCandidates(keywordCandidates, durationMs, title, artist);
+
+                            if (fromKeyword.size() > best.size()) {
+                                best = fromKeyword;
+                            }
                         }
                     }
 
-                    String wantedTitle = normalize(title);
-                    String wantedArtist = normalize(artist);
-
-                    ordered.sort(java.util.Comparator.comparingLong(candidate -> {
-                        String song = normalize(stringOf(candidate, "song"));
-                        String singer = normalize(stringOf(candidate, "singer"));
-                        long score = 0L;
-
-                        if (!wantedTitle.isEmpty() && !song.isEmpty()) {
-                            score += song.contains(wantedTitle) || wantedTitle.contains(song) ? 0 : 2000;
-                        }
-
-                        if (!wantedArtist.isEmpty() && !singer.isEmpty()) {
-                            score += singer.contains(wantedArtist) || wantedArtist.contains(singer) ? 0 : 500;
-                        }
-
-                        if (durationMs > 0) {
-                            score += Math.abs(longOf(candidate, "duration") - durationMs) / 1000;
-                        }
-
-                        return score;
-                    }));
-
-                    List<NetEaseApi.LyricLine> best = List.of();
-
-                    for (int i = 0; i < Math.min(3, ordered.size()); i++) {
-                        JsonObject candidate = ordered.get(i);
-                        String id = stringOf(candidate, "id");
-                        String accesskey = stringOf(candidate, "accesskey");
-
-                        if (id.isEmpty() || accesskey.isEmpty()) {
-                            continue;
-                        }
-
-                        String download = httpGet("https://lyrics.kugou.com/download?ver=1&client=pc&id="
-                                + urlEncode(id) + "&accesskey=" + urlEncode(accesskey)
-                                + "&fmt=lrc&charset=utf8", null);
-                        JsonObject lyricRoot = JsonParser.parseString(download).getAsJsonObject();
-                        String content = stringOf(lyricRoot, "content");
-
-                        if (content.isEmpty()) {
-                            continue;
-                        }
-
-                        String lrc = new String(Base64.getDecoder().decode(content), StandardCharsets.UTF_8);
-                        List<NetEaseApi.LyricLine> parsed = NetEaseApi.parseLyric(lrc);
-
-                        if (parsed.size() > best.size()) {
-                            best = parsed;
-                        }
-
-                        if (best.size() >= 8) {
-                            break;
-                        }
-                    }
-
-                    if (SimpleVoiceChatMusic.LOGGER != null) {
-                        SimpleVoiceChatMusic.LOGGER.info("[Kugou] lyrics for " + title + " / " + artist
-                                + ": " + best.size() + " lines"
-                                + (ordered.isEmpty() ? "" : ", top candidate="
-                                + stringOf(ordered.get(0), "song") + " - " + stringOf(ordered.get(0), "singer")));
-                    }
 
                     LYRICS.put(identifier, best);
                 } catch (Exception e) {
@@ -858,6 +806,106 @@ public final class KugouApi {
             builder.append(chars.charAt(ThreadLocalRandom.current().nextInt(chars.length())));
         }
         return builder.toString();
+    }
+
+    private static List<NetEaseApi.LyricLine> tryCandidates(List<JsonObject> candidates,
+                                                             long durationMs, String title, String artist) {
+        if (candidates == null || candidates.isEmpty()) {
+            return List.of();
+        }
+
+        String wantedTitle = normalize(title);
+        String wantedArtist = normalize(artist);
+
+        java.util.List<JsonObject> ordered = new java.util.ArrayList<>(candidates);
+        ordered.sort(java.util.Comparator.comparingLong(candidate -> {
+            String song = normalize(stringOf(candidate, "song"));
+            String singer = normalize(stringOf(candidate, "singer"));
+            long candidateDuration = longOf(candidate, "duration");
+            long score = 0L;
+
+            if (!wantedTitle.isEmpty() && !song.isEmpty()) {
+                if (song.equals(wantedTitle)) {
+                    score += 0;
+                } else if (song.startsWith(wantedTitle)) {
+                    score += 50;
+                } else if (song.contains(wantedTitle)) {
+                    score += 200;
+                } else {
+                    score += 5000;
+                }
+            }
+
+            if (!wantedArtist.isEmpty() && !singer.isEmpty()) {
+                if (!(singer.contains(wantedArtist) || wantedArtist.contains(singer))) {
+                    score += 300;
+                }
+            }
+
+            if (durationMs > 0) {
+                score += candidateDuration <= 0 ? 5000 : Math.abs(candidateDuration - durationMs) / 1000;
+            }
+
+            return score;
+        }));
+
+        List<NetEaseApi.LyricLine> best = List.of();
+
+        for (int i = 0; i < Math.min(4, ordered.size()); i++) {
+            JsonObject candidate = ordered.get(i);
+            String id = stringOf(candidate, "id");
+            String accesskey = stringOf(candidate, "accesskey");
+
+            if (id.isEmpty() || accesskey.isEmpty()) {
+                continue;
+            }
+
+            try {
+                String download = httpGet("https://lyrics.kugou.com/download?ver=1&client=pc&id="
+                        + urlEncode(id) + "&accesskey=" + urlEncode(accesskey)
+                        + "&fmt=lrc&charset=utf8", null);
+                JsonObject lyricRoot = JsonParser.parseString(download).getAsJsonObject();
+                String content = stringOf(lyricRoot, "content");
+
+                if (content.isEmpty()) {
+                    continue;
+                }
+
+                String lrc = new String(Base64.getDecoder().decode(content), StandardCharsets.UTF_8);
+                List<NetEaseApi.LyricLine> parsed = NetEaseApi.parseLyric(lrc);
+
+                if (parsed.size() > best.size()) {
+                    best = parsed;
+                }
+
+                if (best.size() >= 8) {
+                    break;
+                }
+            } catch (Exception ignored) {
+                // 尝试下一个候选
+            }
+        }
+
+        return best;
+    }
+
+    private static void collectCandidates(String json, java.util.List<JsonObject> target) {
+        try {
+            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+            JsonArray candidates = arrayOf(root, "candidates");
+
+            if (candidates == null) {
+                return;
+            }
+
+            for (JsonElement element : candidates) {
+                if (element.isJsonObject()) {
+                    target.add(element.getAsJsonObject());
+                }
+            }
+        } catch (Exception ignored) {
+            // 忽略单个来源失败
+        }
     }
 
     private static String normalize(String value) {
